@@ -18,3 +18,79 @@ Este projeto tem como objetivo desenvolver um jogo de xadrez inteligente e inter
 * Tabuleiro de xadrez inteligente funcional.
 * Documentação técnica detalhada.
 * Relatórios de capacitação e divulgação.
+
+## Estrutura de arquivos
+XEQUE-Mate/
+
+├── src/
+
+│   ├── __init__.py
+
+│   ├── main.py
+
+│   ├── chess_engine.py
+
+│   └── ... (outros módulos)
+
+├── tests/
+
+│   ├── __init__.py
+
+│   ├── test_chess_engine.py
+
+│   └── ... (outros arquivos de teste)
+
+├── stockfish/
+
+│   └── stockfish-windows-x86-64-sse41-popcnt.exe (ou o executável apropriado para o seu sistema)
+
+├── data/
+
+│   └── ... (arquivos de dados, se houver)
+
+├── docs/
+
+│   └── LICENSE
+
+│   └── ... (documentação do projeto)
+
+├── .gitignore
+
+├── README.md
+
+├── requirements.txt
+
+└── setup.py (se você planeja empacotar seu projeto)
+
+
+src/:
+    
+    Contém o código-fonte principal do seu aplicativo. Seguir as convenções do PEP 8 para escrever um código Python legível e consistente. Manter funções e métodos curtos e com responsabilidade única.
+    
+tests/:
+    
+    Inclui todos os testes automatizados do seu projeto. Verificar o uso de frameworks de teste como unittest (integrado ao Python) ou pytest para facilitar a escrita e execução dos testes.
+    
+stockfish/:
+
+    Armazena o executável do Stockfish.
+    
+data/:
+
+    Contém arquivos de dados usados pelo seu aplicativo, como arquivos PGN, configurações ou recursos adicionais.
+    
+docs/:
+
+    Armazena a documentação do seu projeto. Considerar usar ferramentas como Sphinx para gerar documentação automática.
+    
+
+Arquivos de Configuração e Documentação:
+
+    .gitignore: Lista de arquivos e pastas que o Git deve ignorar (por exemplo, arquivos temporários, ambientes virtuais).
+    
+    README.md: Descrição geral do projeto, instruções de instalação e uso.
+    
+    requirements.txt: Lista de dependências Python que podem ser instaladas com pip install -r requirements.txt. Sempre que adicionar uma nova dependência, atualizar o requirements.txt usando pip freeze > requirements.txt.
+    
+    setup.py: Arquivo de configuração para empacotar e distribuir seu projeto (opcional).
+    
