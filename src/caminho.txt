@@ -1,0 +1,1 @@
+C:\Users\ADM\Documents\Arduino\libraries\MFRC522\src\MFRC522Extended.cpp
