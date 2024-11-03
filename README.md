@@ -18,6 +18,15 @@ Este projeto tem como objetivo desenvolver um jogo de xadrez inteligente e inter
 * Tabuleiro de xadrez inteligente funcional.
 * Documentação técnica detalhada.
 * Relatórios de capacitação e divulgação.
+
+## Padronização dos commits
+* feat: uma nova feature (recurso) que você está adicionando a uma aplicação específica ;
+* fix: a resolução de um bug;
+* style: recurso e atualizações relacionadas à estilização;
+* refactor: refatoração de uma seção específica da base de código;
+* test: tudo o que for relacionado a testes;
+* docs: tudo o que for relacionado à documentação;
+* chore: manutenção regular do código.
 <<<<<<< HEAD
 =======
 
@@ -97,3 +106,5 @@ Arquivos de Configuração e Documentação:
     setup.py: Arquivo de configuração para empacotar e distribuir seu projeto (opcional).
     
 >>>>>>> stockfish
+
+##
