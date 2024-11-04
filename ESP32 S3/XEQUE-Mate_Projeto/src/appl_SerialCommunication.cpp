@@ -75,7 +75,7 @@ void SerialCommunication::serialTransmitTask() {
     char message[64];
     for (;;) {
         if (xQueueReceive(serialQueue, &message, portMAX_DELAY) == pdPASS) {
-            serial->println(message);
+            LOG_INFO(serial, message);
         }
     }
 }
@@ -113,9 +113,19 @@ void SerialCommunication::processCommand(const char* command) {
         // Comandos para WiFiManager
         if (serialQueue != nullptr) {
             xQueueSend(serialQueue, command, portMAX_DELAY);  // Envia o comando para WiFiManager
+            LOG_DEBUG(serial, ("Comando enviado para a fila serialQueue. Comando: " + String(command)).c_str());
+
+            // Envia notificação para a WiFiManager processar o comando
+            if (wifiTaskHandle != nullptr) {
+                xTaskNotify(wifiTaskHandle, 0, eNoAction);
+            }
         }
     } else {
         // Comando não reconhecido - para futuras implementações, podemos adicionar mais verificações
         sendMessage("Comando desconhecido. Digite 'HELP' para ver os comandos disponíveis.");
     }
+}
+
+void SerialCommunication::setWiFiTaskHandle(TaskHandle_t handle) {
+    wifiTaskHandle = handle;  // Handle para notificar a WiFiManager
 }

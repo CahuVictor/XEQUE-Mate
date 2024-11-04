@@ -9,7 +9,7 @@ void WiFiManager::initialize() {
 }
 
 void WiFiManager::startWiFiTask() {
-    xTaskCreate(taskWrapper, "WiFi Task", 4096, this, 1, NULL);
+    xTaskCreate(taskWrapper, "WiFi Task", 4096, this, 1, &wifiTaskHandle);  // Salva o handle da tarefa
 }
 
 void WiFiManager::setSerialQueue(QueueHandle_t queue) {
@@ -92,8 +92,14 @@ void WiFiManager::monitorWiFiTask() {
             startAPMode();
         }
 
+        // Aguarda uma notificação de novo comando ou verifica periodicamente
+        uint32_t notificationValue;
+        if (xTaskNotifyWait(0, 0, &notificationValue, pdMS_TO_TICKS(500)) == pdPASS) {
+            processSerialCommands();  // Processa comandos quando uma notificação é recebida
+        }
+
         // Processa comandos recebidos pela Serial
-        processSerialCommands();
+        //processSerialCommands();
 
         dnsServer.processNextRequest();
         vTaskDelay(pdMS_TO_TICKS(500));
@@ -101,23 +107,26 @@ void WiFiManager::monitorWiFiTask() {
 }
 
 void WiFiManager::processSerialCommands() {
-    static String lastCommand = "";
+    //static String lastCommand = "";
+    LOG_DEBUG(&Serial, "WiFiManager: Verificando serialQueue...");
 
     if (serialQueue != nullptr) {
+        LOG_DEBUG(&Serial, ("serialQueue != nullptr"));
         char command[QUEUE_MESSAGE_SIZE];
-        if (xQueueReceive(serialQueue, &command, 0) == pdPASS) {
+        if (xQueueReceive(serialQueue, &command, pdMS_TO_TICKS(100)) == pdPASS) {
+            LOG_DEBUG(&Serial, (String("WiFiManager: Comando recebido: ") + String(command)).c_str());
+            
             // Verifica se o comando atual é diferente do último processado
-            if (lastCommand != command) {
-                lastCommand = command;  // Atualiza o último comando processado
-
-                LOG_INFO(&Serial, (String("Comando recebido via Serial: ") + command).c_str());
-
+            //if (lastCommand != command) {
+                //lastCommand = command;  // Atualiza o último comando processado
                 if (strncmp(command, "SSID:", 5) == 0) {
+                    // Tratamento do comando SSID
                     String ssid = String(command + 5);
                     LOG_INFO(&Serial, (String("Recebido SSID via Serial: ") + ssid).c_str());
                     WiFi.begin(ssid.c_str(), WiFi.psk().c_str());
 
                 } else if (strncmp(command, "PASSWORD:", 9) == 0) {
+                    // Tratamento do comando PASSWORD
                     String password = String(command + 9);
                     LOG_INFO(&Serial, "Senha WiFi recebida via Serial.");
                     WiFi.begin(WiFi.SSID().c_str(), password.c_str());
@@ -125,16 +134,22 @@ void WiFiManager::processSerialCommands() {
                 } else if (strcmp(command, "GET IP") == 0) {
                     printIPAddress();
                 }
-            }
+            //}
+        } else {
+            LOG_DEBUG(&Serial, ("Falhou ao tentar coletar o comando da serialQueue"));
         }
+
+    } else {
+        LOG_DEBUG(&Serial, ("serialQueue == nullptr"));
     }
 }
+
 void WiFiManager::printIPAddress() {
     if (WiFi.status() == WL_CONNECTED) {
         LOG_INFO(&Serial, (String("IP conectado: ") + WiFi.localIP().toString()).c_str());
     } else if (WiFi.getMode() == WIFI_AP) {
         LOG_INFO(&Serial, (String("IP modo AP: ") + WiFi.softAPIP().toString()).c_str());
     } else {
-        LOG_INFO(&Serial, "Nenhuma conexão WiFi ativa.");
+        LOG_WARNING(&Serial, "WiFiManager: Nenhuma conexão WiFi ativa.");
     }
 }

@@ -17,6 +17,8 @@ public:
     bool sendMessage(const char* message);    // Envia uma mensagem para a fila de transmissão
     int readData(char* buffer, size_t length); // Lê dados do buffer circular para outro bloco
 
+    void setWiFiTaskHandle(TaskHandle_t handle);
+
 private:
     Stream* serial;                           // Interface serial para comunicação
     QueueHandle_t serialQueue;                // Fila para dados de saída serial
@@ -39,6 +41,8 @@ private:
 
     void writeToBuffer(char c);               // Escreve no buffer circular
     int readFromBuffer(char* buffer, size_t length); // Lê do buffer circular
+
+    TaskHandle_t wifiTaskHandle;  // Handle para notificar a WiFiManager
 };
 
 #endif

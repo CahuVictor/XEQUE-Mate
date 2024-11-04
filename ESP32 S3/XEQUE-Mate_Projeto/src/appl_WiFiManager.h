@@ -25,6 +25,8 @@ public:
     void startWiFiTask();                    // Inicia a tarefa FreeRTOS para gerenciar WiFi
     void setSerialQueue(QueueHandle_t queue);  // Define a fila da comunicação serial
 
+    TaskHandle_t getWiFiTaskHandle() const { return wifiTaskHandle; }
+
 private:
     AsyncWebServer server;
     DNSServer dnsServer;
@@ -40,6 +42,8 @@ private:
     void monitorWiFiTask();
     void processSerialCommands();              // Processa comandos da fila serial
     void printIPAddress();                     // Função para imprimir o IP atual
+
+    TaskHandle_t wifiTaskHandle;  // Adiciona o handle da tarefa WiFi para receber notificações
 
     static void taskWrapper(void* _this) {
         static_cast<WiFiManager*>(_this)->monitorWiFiTask();
