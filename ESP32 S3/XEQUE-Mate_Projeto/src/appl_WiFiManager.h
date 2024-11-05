@@ -22,31 +22,33 @@ class WiFiManager {
 public:
     WiFiManager();
     void initialize();
-    void startWiFiTask();                    // Inicia a tarefa FreeRTOS para gerenciar WiFi
-    void setSerialQueue(QueueHandle_t queue);  // Define a fila da comunicação serial
+    void setQueue(QueueHandle_t* queue);     // Define a fila da comunicação serial
+    void startTask();                    // Inicia a tarefa FreeRTOS para gerenciar WiFi
 
-    TaskHandle_t getWiFiTaskHandle() const { return wifiTaskHandle; }
+    //TaskHandle_t getWiFiTaskHandle() const { return wifiTaskHandle; }
 
 private:
     AsyncWebServer server;
     DNSServer dnsServer;
-    SemaphoreHandle_t wifiSemaphore;
-    QueueHandle_t serialQueue;                // Ponteiro para a fila da comunicação serial
+    //SemaphoreHandle_t wifiSemaphore;
+    QueueHandle_t* __queue__;                // Ponteiro para a fila da comunicação serial
     bool apModeActive;
+
+    void monitorWiFiTask();
+    void processCommand();                     // Processa comandos da fila serial
 
     void connectToWiFi();
     void startAPMode();
     void setupCaptivePortal();
     void handleRootRequest(AsyncWebServerRequest* request);
     void handleWiFiConfig(AsyncWebServerRequest* request);
-    void monitorWiFiTask();
-    void processSerialCommands();              // Processa comandos da fila serial
+
     void printIPAddress();                     // Função para imprimir o IP atual
 
-    TaskHandle_t wifiTaskHandle;  // Adiciona o handle da tarefa WiFi para receber notificações
+    //TaskHandle_t wifiTaskHandle;  // Adiciona o handle da tarefa WiFi para receber notificações
 
-    static void taskWrapper(void* _this) {
-        static_cast<WiFiManager*>(_this)->monitorWiFiTask();
+    static void taskWrapper(void* param) {
+        static_cast<WiFiManager*>(param)->monitorWiFiTask();
     }
 };
 

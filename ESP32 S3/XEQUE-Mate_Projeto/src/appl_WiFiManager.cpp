@@ -1,19 +1,23 @@
 #include "appl_WiFiManager.h"
 
 WiFiManager::WiFiManager() 
-    : server(CAPTIVE_PORTAL_PORT), apModeActive(false), wifiSemaphore(nullptr), serialQueue(nullptr) {}
+    : server(CAPTIVE_PORTAL_PORT), apModeActive(false), /*wifiSemaphore(nullptr),*/ __queue__(nullptr) {}
 
 void WiFiManager::initialize() {
-    wifiSemaphore = xSemaphoreCreateBinary();
+    //wifiSemaphore = xSemaphoreCreateBinary();
     connectToWiFi();
 }
 
-void WiFiManager::startWiFiTask() {
-    xTaskCreate(taskWrapper, "WiFi Task", 4096, this, 1, &wifiTaskHandle);  // Salva o handle da tarefa
+void WiFiManager::setQueue(QueueHandle_t* queue) {
+    __queue__ = queue;
 }
 
-void WiFiManager::setSerialQueue(QueueHandle_t queue) {
-    serialQueue = queue;
+void WiFiManager::startTask() {
+    xTaskCreate(taskWrapper, "WiFi Task",                                   // A name just for humans
+                4096,                                                       // The stack size can be checked by calling `uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);`
+                this,                                                       // 
+                1,                                                          // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+                NULL/*&wifiTaskHandle*/);                                           // Salva o handle da tarefa
 }
 
 void WiFiManager::connectToWiFi() {
@@ -93,10 +97,10 @@ void WiFiManager::monitorWiFiTask() {
         }
 
         // Aguarda uma notificação de novo comando ou verifica periodicamente
-        uint32_t notificationValue;
-        if (xTaskNotifyWait(0, 0, &notificationValue, pdMS_TO_TICKS(500)) == pdPASS) {
-            processSerialCommands();  // Processa comandos quando uma notificação é recebida
-        }
+        //uint32_t notificationValue;
+        //if (xTaskNotifyWait(0, 0, &notificationValue, pdMS_TO_TICKS(500)) == pdPASS) {
+            processCommand();  // Processa comandos quando uma notificação é recebida
+        //}
 
         // Processa comandos recebidos pela Serial
         //processSerialCommands();
@@ -106,14 +110,15 @@ void WiFiManager::monitorWiFiTask() {
     }
 }
 
-void WiFiManager::processSerialCommands() {
+void WiFiManager::processCommand() {
     //static String lastCommand = "";
     LOG_DEBUG(&Serial, "WiFiManager: Verificando serialQueue...");
 
-    if (serialQueue != nullptr) {
+    if (__queue__ != nullptr && *__queue__ != nullptr) {
         LOG_DEBUG(&Serial, ("serialQueue != nullptr"));
         char command[QUEUE_MESSAGE_SIZE];
-        if (xQueueReceive(serialQueue, &command, pdMS_TO_TICKS(100)) == pdPASS) {
+        int ret = xQueueReceive((*__queue__), &command, /*pdMS_TO_TICKS(100)*/portMAX_DELAY);
+        if (ret == pdPASS) {
             LOG_DEBUG(&Serial, (String("WiFiManager: Comando recebido: ") + String(command)).c_str());
             
             // Verifica se o comando atual é diferente do último processado

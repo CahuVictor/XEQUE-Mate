@@ -45,3 +45,6 @@ Adicione as dependências ao arquivo `platformio.ini`:
 lib_deps =
     me-no-dev/ESP Async WebServer@^1.2.4
     me-no-dev/AsyncTCP@^1.1.1
+
+## Link Referência
+    https://chatgpt.com/share/672967b5-eae4-8010-ac69-a2370c70d265

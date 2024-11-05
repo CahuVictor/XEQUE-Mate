@@ -1,16 +1,16 @@
 #include "appl_SerialCommunication.h"
 
 SerialCommunication::SerialCommunication(Stream* serialInterface) 
-    : serial(serialInterface), serialQueue(nullptr), bufferMutex(nullptr), writeIndex(0), readIndex(0) {}
+    : serial(serialInterface), __queue__(nullptr), bufferMutex(nullptr), writeIndex(0), readIndex(0) {}
 
 void SerialCommunication::initialize() {
     LOG_INFO(serial, "SerialCommunication: Inicializado com fila e buffer.");
 
     // Inicializa a fila para dados de saída serial
-    serialQueue = xQueueCreate(10, sizeof(char) * 64);
+    /*serialQueue = xQueueCreate(10, sizeof(char) * 64);
     if (serialQueue == nullptr) {
         LOG_ERROR(serial, "SerialCommunication: Falha ao criar a fila de transmissão serial.");
-    }
+    }*/
 
     // Inicializa o mutex para o buffer
     bufferMutex = xSemaphoreCreateMutex();
@@ -19,14 +19,30 @@ void SerialCommunication::initialize() {
     }
 }
 
-void SerialCommunication::startTasks() {
-    xTaskCreate(receiveTaskWrapper, "Serial Receive Task", 2048, this, 1, NULL);
-    xTaskCreate(transmitTaskWrapper, "Serial Transmit Task", 2048, this, 1, NULL);
+void SerialCommunication::setQueue(QueueHandle_t* queue) {
+    __queue__ = queue;
+}
+
+void SerialCommunication::startTask() {
+    xTaskCreate(receiveTaskWrapper, "Serial Receive Task",              // A name just for humans
+                2048,                                                   // The stack size can be checked by calling `uxHighWaterMark = 
+                                                                        // uxTaskGetStackHighWaterMark(NULL);`
+                this,                                                   // Task parameter which can modify the task behavior. This must 
+                                                                        // be passed as pointer to void.
+                1,                                                      // Priority
+                NULL);                                                  // Task handle is not used here - simply pass NULL
+    xTaskCreate(transmitTaskWrapper, "Serial Transmit Task", 
+                2048,                                                   // The stack size can be checked by calling `uxHighWaterMark = 
+                                                                        // uxTaskGetStackHighWaterMark(NULL);`
+                this,                                           // Task parameter which can modify the task behavior. This must 
+                                                                        // be passed as pointer to void.
+                1,                                                      // Priority
+                NULL);                                                  // Task handle is not used here - simply pass NULL
 }
 
 bool SerialCommunication::sendMessage(const char* message) {
-    if (serialQueue != nullptr) {
-        if (xQueueSend(serialQueue, message, portMAX_DELAY) == pdPASS) {
+    if (__queue__ != nullptr && *__queue__ != nullptr) {
+        if (xQueueSend(*__queue__, message, portMAX_DELAY) == pdPASS) {
             return true;
         } else {
             LOG_WARNING(serial, "SerialCommunication: Falha ao enviar mensagem para a fila serial.");
@@ -74,7 +90,7 @@ void SerialCommunication::serialReceiveTask() {
 void SerialCommunication::serialTransmitTask() {
     char message[64];
     for (;;) {
-        if (xQueueReceive(serialQueue, &message, portMAX_DELAY) == pdPASS) {
+        if (xQueueReceive(*__queue__, &message, portMAX_DELAY) == pdPASS) {
             LOG_INFO(serial, message);
         }
     }
@@ -111,14 +127,14 @@ void SerialCommunication::processCommand(const char* command) {
         sendMessage("Comandos disponíveis:\nSSID:<nome>\nPASSWORD:<senha>\nHELP\nGET IP\n");
     } else if (strstr(command, "GET IP") != nullptr || strstr(command, "SSID:") != nullptr || strstr(command, "PASSWORD:") != nullptr) {
         // Comandos para WiFiManager
-        if (serialQueue != nullptr) {
-            xQueueSend(serialQueue, command, portMAX_DELAY);  // Envia o comando para WiFiManager
+        if ( __queue__ != nullptr) {
+            xQueueSend( *__queue__ , command, portMAX_DELAY);  // Envia o comando para WiFiManager
             LOG_DEBUG(serial, ("Comando enviado para a fila serialQueue. Comando: " + String(command)).c_str());
 
             // Envia notificação para a WiFiManager processar o comando
-            if (wifiTaskHandle != nullptr) {
+            /*if (wifiTaskHandle != nullptr) {
                 xTaskNotify(wifiTaskHandle, 0, eNoAction);
-            }
+            }*/
         }
     } else {
         // Comando não reconhecido - para futuras implementações, podemos adicionar mais verificações
@@ -126,6 +142,6 @@ void SerialCommunication::processCommand(const char* command) {
     }
 }
 
-void SerialCommunication::setWiFiTaskHandle(TaskHandle_t handle) {
+/*void SerialCommunication::setWiFiTaskHandle(TaskHandle_t handle) {
     wifiTaskHandle = handle;  // Handle para notificar a WiFiManager
-}
+}*/
