@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-//#include "MyLogger.h"
+#include "appl_MyLogger.h"
 #include "appl_SerialCommunication.h"
 #include "appl_WiFiManager.h"
 
@@ -9,6 +9,22 @@ SerialCommunication serialComm(&Serial);  // Passa a interface Serial como parâ
 WiFiManager wifiManager;
 QueueHandle_t __queue__;
 const int QueueElementSize = 10;
+
+// Função da nova tarefa para imprimir o conteúdo da fila
+void printQueueTask(void* pvParameters) {
+    char receivedMessage[64];  // Buffer para armazenar a mensagem da fila
+    for (;;) {
+        // Tenta ler a fila sem bloquear
+        if (xQueueReceive(__queue__, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS) {
+            Serial.printf("[Queue Monitor] Mensagem recebida da fila: %s\n", receivedMessage);
+        } else {
+            Serial.println("[Queue Monitor] Nenhuma mensagem na fila.");
+        }
+
+        // Aguarda 10 segundos antes de verificar novamente
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
+}
 
 void setup() {
     // Inicialização da comunicação serial
@@ -50,6 +66,9 @@ void setup() {
 
     // Configurações de teste
     serialComm.sendMessage("Hello from SerialCommunication!");
+
+    // Cria a nova tarefa para monitorar a fila
+    xTaskCreate(printQueueTask, "Queue Monitor Task", 2048, NULL, 1, NULL);
 }
 
 void loop() {
