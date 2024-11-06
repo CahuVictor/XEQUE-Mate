@@ -42,7 +42,13 @@ void SerialCommunication::startTask() {
 
 bool SerialCommunication::sendMessage(const char* message) {
     if (__queue__ != nullptr && *__queue__ != nullptr) {
-        if (xQueueSend(*__queue__, message, portMAX_DELAY) == pdPASS) {
+        if (xQueueSend(*__queue__, message, portMAX_DELAY) == pdPASS)
+        {
+            delay(1000);
+            char checkMessage[64];  // Buffer para armazenar a mensagem da fila
+            xQueueReceive(*__queue__, &checkMessage, pdMS_TO_TICKS(100));
+            Serial.printf("SerialCommunication: Mensagem salva na fila: %s\n", String(checkMessage));
+            
             return true;
         } else {
             LOG_WARNING(serial, "SerialCommunication: Falha ao enviar mensagem para a fila serial.");
@@ -102,13 +108,13 @@ void SerialCommunication::writeToBuffer(char c) {
 
     // Log de depuração para monitorar a escrita no buffer
     char logBuffer[64];
-    snprintf(logBuffer, sizeof(logBuffer), "Dado recebido '%c' adicionado ao buffer. writeIndex=%d", c, writeIndex);
+    snprintf(logBuffer, sizeof(logBuffer), "serialCommunication: Dado recebido '%c' adicionado ao buffer. writeIndex=%d", c, writeIndex);
     LOG_DEBUG(serial, logBuffer);
 
     // Se o buffer estiver cheio, sobrescreve o dado mais antigo
     if (writeIndex == readIndex) {
         readIndex = (readIndex + 1) % BUFFER_SIZE;
-        LOG_WARNING(serial, "Buffer circular cheio. Sobrescrevendo dados antigos.");
+        LOG_WARNING(serial, "serialCommunication: Buffer circular cheio. Sobrescrevendo dados antigos.");
     }
 }
 
@@ -129,7 +135,7 @@ void SerialCommunication::processCommand(const char* command) {
         // Comandos para WiFiManager
         if ( __queue__ != nullptr) {
             xQueueSend( *__queue__ , command, portMAX_DELAY);  // Envia o comando para WiFiManager
-            LOG_DEBUG(serial, ("Comando enviado para a fila serialQueue. Comando: " + String(command)).c_str());
+            LOG_DEBUG(serial, ("serialCommunication: Comando enviado para a fila __queue__. Comando: " + String(command)).c_str());
 
             // Envia notificação para a WiFiManager processar o comando
             /*if (wifiTaskHandle != nullptr) {
@@ -138,7 +144,7 @@ void SerialCommunication::processCommand(const char* command) {
         }
     } else {
         // Comando não reconhecido - para futuras implementações, podemos adicionar mais verificações
-        sendMessage("Comando desconhecido. Digite 'HELP' para ver os comandos disponíveis.");
+        sendMessage("serialCommunication: Comando desconhecido. Digite 'HELP' para ver os comandos disponíveis.");
     }
 }
 
