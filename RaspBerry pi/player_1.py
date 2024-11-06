@@ -59,6 +59,15 @@ def jogar():
 
     else:
         print("O jogo acabou.")
+        print(board)
+        resultado = board.result()
+        if resultado == "1-0":
+            print("Vitória das brancas!")
+        elif resultado == "0-1":
+            print("Vitória das pretas!")
+        else:
+            print("O jogo terminou em empate.")
+        exit()
         
     return jsonify(move=jogada)
 
@@ -90,6 +99,12 @@ def controle_jogo():
         elif comando == "exit":
             print("Saindo...")
             break  # Encerra o loop e sai
+            
+def parar_jogo():
+    """Função para parar o jogo e alterar o estado de game_running para False."""
+    global game_running
+    game_running = False
+    print("Jogo parado!")
 
 
 if __name__ == '__main__':
