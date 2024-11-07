@@ -1,15 +1,16 @@
 #include "appl_WiFiManager.h"
 
 WiFiManager::WiFiManager() 
-    : server(CAPTIVE_PORTAL_PORT), apModeActive(false), /*wifiSemaphore(nullptr),*/ __queue__(nullptr) {}
+    : server(CAPTIVE_PORTAL_PORT), apModeActive(false), /*wifiSemaphore(nullptr),*/ SendQueue(nullptr), ReceiveQueue(nullptr) {}
 
 void WiFiManager::initialize() {
     //wifiSemaphore = xSemaphoreCreateBinary();
     connectToWiFi();
 }
 
-void WiFiManager::setQueue(QueueHandle_t* queue) {
-    __queue__ = queue;
+void WiFiManager::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
+    this->SendQueue = SendQueue;
+    this->ReceiveQueue = ReceiveQueue;
 }
 
 void WiFiManager::startTask() {
@@ -95,57 +96,52 @@ void WiFiManager::monitorWiFiTask() {
             LOG_INFO(&Serial, "WiFiManager: WiFi desconectado. Ativando modo AP...");
             startAPMode();
         }
-
-        // Aguarda uma notificação de novo comando ou verifica periodicamente
-        //uint32_t notificationValue;
-        //if (xTaskNotifyWait(0, 0, &notificationValue, pdMS_TO_TICKS(500)) == pdPASS) {
-            processCommand();  // Processa comandos quando uma notificação é recebida
-        //}
-
-        // Processa comandos recebidos pela Serial
-        //processSerialCommands();
+        
+        processReceiveCommand();  // Processa comandos recebidos
 
         dnsServer.processNextRequest();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-void WiFiManager::processCommand() {
+void WiFiManager::processReceiveCommand() {
     //static String lastCommand = "";
-    LOG_DEBUG(&Serial, "WiFiManager: Verificando __queue__...");
+    //LOG_DEBUG(&Serial, "WiFiManager: Verificando ReceiveQueue...");
 
-    if (__queue__ != nullptr && *__queue__ != nullptr) {
-        LOG_DEBUG(&Serial, ("WiFiManager: __queue__ != nullptr"));
+    if (this->ReceiveQueue != nullptr) {
+        //LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue != nullptr"));
         char command[QUEUE_MESSAGE_SIZE];
-        int ret = xQueueReceive((*__queue__), &command, /*pdMS_TO_TICKS(100)*/portMAX_DELAY);
-        if (ret == pdPASS) {
+        if (xQueueReceive((this->ReceiveQueue), &command, pdMS_TO_TICKS(100))== pdPASS)
+        {
             LOG_DEBUG(&Serial, (String("WiFiManager: Comando recebido: ") + String(command)).c_str());
-            
-            // Verifica se o comando atual é diferente do último processado
-            //if (lastCommand != command) {
-                //lastCommand = command;  // Atualiza o último comando processado
-                if (strncmp(command, "SSID:", 5) == 0) {
-                    // Tratamento do comando SSID
-                    String ssid = String(command + 5);
-                    LOG_INFO(&Serial, (String("WiFiManager: Recebido SSID via __queue__: ") + ssid).c_str());
-                    WiFi.begin(ssid.c_str(), WiFi.psk().c_str());
+            if (strncmp(command, "SSID:", 5) == 0)
+            {
+                // Tratamento do comando SSID
+                String ssid = String(command + 5);
+                LOG_INFO(&Serial, (String("WiFiManager: Recebido SSID via ReceiveQueue: ") + ssid).c_str());
+                WiFi.begin(ssid.c_str(), WiFi.psk().c_str());
 
-                } else if (strncmp(command, "PASSWORD:", 9) == 0) {
-                    // Tratamento do comando PASSWORD
-                    String password = String(command + 9);
-                    LOG_INFO(&Serial, "WiFiManager: Senha WiFi recebida via __queue__.");
-                    WiFi.begin(WiFi.SSID().c_str(), password.c_str());
+            } else if (strncmp(command, "PASSWORD:", 9) == 0)
+            {
+                // Tratamento do comando PASSWORD
+                String password = String(command + 9);
+                LOG_INFO(&Serial, "WiFiManager: Senha WiFi recebida via ReceiveQueue.");
+                WiFi.begin(WiFi.SSID().c_str(), password.c_str());
 
-                } else if (strcmp(command, "GET IP") == 0) {
-                    printIPAddress();
-                }
-            //}
-        } else {
-            LOG_DEBUG(&Serial, ("WiFiManager: Falhou ao tentar coletar o comando da __queue__"));
-        }
+            } else if (strncmp(command, "GET IP", 6) == 0)
+            {
+                printIPAddress();
+            } else
+            {
+                LOG_DEBUG(&Serial, "WiFiManager: Comando recebido desconhecido.");
+            }
+        } /*else
+        {
+            LOG_DEBUG(&Serial, ("WiFiManager: Falhou ao tentar coletar o comando da ReceiveQueue"));
+        }*/
 
     } else {
-        LOG_DEBUG(&Serial, ("WiFiManager: __queue__ == nullptr"));
+        LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue == nullptr"));
     }
 }
 

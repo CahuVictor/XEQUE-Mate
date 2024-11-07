@@ -7,7 +7,11 @@
 // Instâncias globais das classes
 SerialCommunication serialComm(&Serial);  // Passa a interface Serial como parâmetro
 WiFiManager wifiManager;
-QueueHandle_t __queue__;
+
+// Queue FreeRtos
+QueueHandle_t queue;                        // Queue onde todos os módulos podem escrever
+QueueHandle_t WiFiQueue;                    // Queue onde apenas o módulo WiFi ler
+QueueHandle_t SerialQueue;                    // Queue onde apenas o módulo WiFi ler
 const int QueueElementSize = 10;
 
 // Função da nova tarefa para imprimir o conteúdo da fila
@@ -15,10 +19,25 @@ void printQueueTask(void* pvParameters) {
     char receivedMessage[64];  // Buffer para armazenar a mensagem da fila
     for (;;) {
         // Tenta ler a fila sem bloquear
-        if (xQueueReceive(__queue__, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS) {
-            Serial.printf("[Queue Monitor] Mensagem recebida da fila: %s\n", receivedMessage);
+        if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS) {
+            LOG_INFO(&Serial, ("[Queue Monitor] Mensagem recebida da fila: %s", receivedMessage));
+
+            if (strstr(receivedMessage, "GET IP") != nullptr || 
+                strstr(receivedMessage, "SSID:") != nullptr || 
+                strstr(receivedMessage, "PASSWORD:") != nullptr)
+            {
+                // Comandos para WiFiManager
+                if ( WiFiQueue != nullptr)
+                {
+                    xQueueSend( WiFiQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+                    LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WiFiManager. Comando: ") + String(receivedMessage)).c_str());
+                } else 
+                {
+                    LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
+                }
+            }
         } else {
-            Serial.println("[Queue Monitor] Nenhuma mensagem na fila.");
+            LOG_INFO(&Serial, "[Queue Monitor] Nenhuma mensagem na fila.");
         }
 
         // Aguarda 10 segundos antes de verificar novamente
@@ -35,11 +54,14 @@ void setup() {
     LOG_INFO(&Serial, "Sistema inicializado com sucesso.");
 
     // Inicializa e configura a fila
-    __queue__ = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);        // Create the queue which will have <QueueElementSize>
+    queue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);        // Create the queue which will have <QueueElementSize>
                                                                                             // number of elements, each of size `message_t` and 
                                                                                             // pass the address to <QueueHandle>.
+    WiFiQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    SerialQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+
     // Check if the queue was successfully created
-    if (__queue__ == NULL) {
+    if (queue == NULL) {
         LOG_INFO(&Serial, "Queue could not be created. Halt.");
         while (1)
         {
@@ -48,8 +70,8 @@ void setup() {
     }
 
     // Passa a fila para os módulos
-    serialComm.setQueue(&__queue__);
-    wifiManager.setQueue(&__queue__);
+    serialComm.setQueue(queue, SerialQueue);
+    wifiManager.setQueue(queue, WiFiQueue);
 
     // Inicialização dos módulos
     serialComm.initialize();
@@ -65,13 +87,14 @@ void setup() {
     //serialComm.startTask();
 
     // Configurações de teste
-    serialComm.sendMessage("Hello from SerialCommunication!");
+    
 
     // Cria a nova tarefa para monitorar a fila
     xTaskCreate(printQueueTask, "Queue Monitor Task", 2048, NULL, 1, NULL);
 }
 
-void loop() {
+void loop()
+{
     // O loop principal não será usado, pois as tarefas são gerenciadas pelo FreeRTOS
     // Exemplo de log periódico
     LOG_INFO(&Serial, "Loop principal em execução.");
