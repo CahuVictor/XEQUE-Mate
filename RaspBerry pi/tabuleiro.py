@@ -3,18 +3,51 @@ import chess
 import time
 import threading
 import requests
+<<<<<<< Updated upstream
 import random
+=======
+
+print(f"Inicio do Script")
+>>>>>>> Stashed changes
 
 app = Flask(__name__)
 
-debug = False
-
 # Variáveis de controle do jogo
 board = chess.Board()
+print(board)
+
 game_running = False
 game_paused = False
+<<<<<<< Updated upstream
 jogador_atual = "Player 1"  # Controla qual jogador está jogando (alternando entre Player 1 e Player 2)
 tabuleiro_url_player1 = "http://localhost:5001/jogar"  # URL do Player 1, que agora fará todas as jogadas
+=======
+tabuleiro_url_player = "http://localhost:5001/jogar"  # URL do Player, que agora fará todas as jogadas
+
+# Variáveis para controlar quem joga com as brancas e quem joga com as pretas
+controlar_brancas = None
+controlar_pretas = None
+
+def controlar_jogadas():
+    """Solicita ao usuário quem controlará as brancas e quem controlará as pretas."""
+    global controlar_brancas, controlar_pretas
+    controlar_brancas = input("Quem irá controlar as peças brancas? (1 para IA, 2 para Jogada Aleatória, 3 para Usuário): ")
+    controlar_pretas = input("Quem irá controlar as peças pretas? (1 para IA, 2 para Jogada Aleatória, 3 para Usuário): ")
+
+    # Enviar as informações ao player antes de iniciar o jogo Json
+    dados_configuracao = {
+        "brancas": controlar_brancas,
+        "pretas": controlar_pretas
+    }
+    try:
+        response = requests.post("http://localhost:5001/configurar_partida", json=dados_configuracao)
+        if response.status_code == 200:
+            print("Configuração enviada com sucesso para o Player!")
+        else:
+            print("Erro ao enviar configuração para o Player.")
+    except requests.RequestException as e:
+        print(f"Erro de comunicação com o Player: {e}")
+>>>>>>> Stashed changes
 
 # Função para mostrar o tabuleiro
 def mostrar_tabuleiro():
@@ -39,9 +72,14 @@ def jogar_partida():
                 game_running = False  # Interrompe o jogo quando ele acabar
                 break  # Sai do loop
 
+<<<<<<< Updated upstream
             # Envia o estado do tabuleiro para o Player 1 para ele fazer a jogada
+=======
+            # Espera pelo Player 1 fazer a jogada
+>>>>>>> Stashed changes
             try:
-                response = requests.post(tabuleiro_url_player1, json={'fen': board.fen()})
+                # Envia o estado do tabuleiro para o Player 1 para ele fazer a jogada
+                response = requests.post(tabuleiro_url_player, json={'fen': board.fen()})
                 if response.status_code == 200:
                     print(f"\nJogada enviada para {jogador_atual}")
                     mostrar_tabuleiro()
@@ -52,9 +90,13 @@ def jogar_partida():
             except requests.RequestException as e:
                 print(f"Erro ao comunicar com {jogador_atual}: {e}")
 
+<<<<<<< Updated upstream
             time.sleep(2)  # Atraso entre as jogadas para simular o ritmo do jogo    
         else:
             time.sleep(1)  # Pausa o loop enquanto o jogo estiver pausado
+=======
+            time.sleep(2)  # Atraso entre as jogadas para simular o ritmo do jogo
+>>>>>>> Stashed changes
 
 # Função para iniciar o jogo
 def iniciar_jogo():
@@ -151,17 +193,25 @@ def jogar():
     """Recebe a jogada do Player 1, faz a jogada e envia de volta o novo estado."""
     fen = request.json['fen']
     board.set_fen(fen)  # Atualiza o tabuleiro com o FEN recebido
+<<<<<<< Updated upstream
     print(f"\n{jogador_atual} recebeu o FEN: {fen}")
 
     if debug:
         mostrar_tabuleiro()
+=======
+    print(f"\nPlayer 1 recebeu o FEN: {fen}")
+>>>>>>> Stashed changes
 
     # O Player 1 realiza a jogada
     jogada = request.json.get('jogada', None)
     if jogada:
         try:
             board.push_uci(jogada)  # Executa a jogada recebida
+<<<<<<< Updated upstream
             print(f"Jogada feita por {jogador_atual}: {jogada}")
+=======
+            print(f"Jogada feita por Player 1: {jogada}")
+>>>>>>> Stashed changes
             mostrar_tabuleiro()
 
             # Retorna o novo estado do tabuleiro após a jogada
@@ -175,5 +225,6 @@ def jogar():
 
 if __name__ == '__main__':
     # Inicia o servidor Flask para o tabuleiro
+    controlar_jogadas()  # Coleta as escolhas dos jogadores
     threading.Thread(target=controlar_comandos, daemon=True).start()
     app.run(port=5000)
