@@ -12,6 +12,8 @@
                 "C:/Users/kahuV/Documents/GitHub/XEQUE-Mate/ESP32 S3/XEQUE-Mate_Projeto/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
+                "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
+                "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 "C:/Users/kahuV/Documents/GitHub/XEQUE-Mate/ESP32 S3/XEQUE-Mate_Projeto/.pio/libdeps/esp32-s3-devkitc-1/ESP Async WebServer/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Network/src",
@@ -245,12 +247,10 @@
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Preferences/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SD/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SD_MMC/src",
-                "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                 "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 ""
             ],
             "browse": {
@@ -260,6 +260,8 @@
                     "C:/Users/kahuV/Documents/GitHub/XEQUE-Mate/ESP32 S3/XEQUE-Mate_Projeto/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
+                    "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
+                    "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     "C:/Users/kahuV/Documents/GitHub/XEQUE-Mate/ESP32 S3/XEQUE-Mate_Projeto/.pio/libdeps/esp32-s3-devkitc-1/ESP Async WebServer/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Network/src",
@@ -493,12 +495,10 @@
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Preferences/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SD/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SD_MMC/src",
-                    "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                     "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                    "C:/Users/kahuV/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     ""
                 ]
             },
