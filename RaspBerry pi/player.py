@@ -8,7 +8,7 @@ import random
 
 app = Flask(__name__)
 board = chess.Board()
-opponent_url = "http://localhost:5000/jogar"  # Endereço do Jogador 1
+tabuleiro_url = "http://localhost:5000/jogar"  # Endereço do Jogador 1
 
 def obter_caminho_engine():
     """Retorna o caminho do executável do Stockfish."""
@@ -23,14 +23,7 @@ def realizar_jogada(fen):
     board = chess.Board(fen)
     with chess.engine.SimpleEngine.popen_uci(engine_path) as engine:
         result = engine.play(board, chess.engine.Limit(time=2))
-        return result.move.uci()
-
-def realizar_jogada_aleatoria(fen):
-    """Realiza uma jogada aleatória e a aplica no tabuleiro."""
-    board = chess.Board(fen)
-    legal_moves = list(board.legal_moves)
-    jogada_aleatoria = random.choice(legal_moves)
-    return jogada_aleatoria  # Retorna a jogada aleatória
+        return result.move.uci()  # Retorna a jogada no formato UCI
 
 @app.route('/jogar', methods=['POST'])
 def jogar():
@@ -41,33 +34,25 @@ def jogar():
     print(board)
 
     if not board.is_game_over():
-        jogada = realizar_jogada_aleatoria(board.fen())  # Obter a jogada aleatória
-        board.push(jogada)  # Aplica a jogada no tabuleiro
+        jogada = realizar_jogada(board.fen())  # Obter a jogada calculada
+        move = chess.Move.from_uci(jogada)  # Converte a string para um objeto Move
+        board.push(move)  # Aplica a jogada no tabuleiro
         print("\nJogador 2 move:", jogada)
         print("Estado atual do tabuleiro:")
         print(board)
 
         # Envia a jogada para o jogador 1
         try:
-            response = requests.post(opponent_url, json={'fen': board.fen()}, timeout=5)
+            response = requests.post(tabuleiro_url, json={'fen': board.fen()}, timeout=5)
             if response.status_code == 200:
-                print("\nJogada enviada para o Jogador 1.")
+                print("\nJogada enviada para o tabuleiro.")
             else:
-                print("Erro ao enviar jogada para o Jogador 1.")
+                print("Erro ao enviar jogada para o tabuleiro.")
         except requests.RequestException as e:
             print(f"Erro: {e}")
 
     else:
         print("O jogo acabou.")
-        print(board)
-        resultado = board.result()
-        if resultado == "1-0":
-            print("Vitória das brancas!")
-        elif resultado == "0-1":
-            print("Vitória das pretas!")
-        else:
-            print("O jogo terminou em empate.")
-        exit()
         
     return jsonify(move=str(jogada))  # Retorna a jogada como uma string no formato UCI
 
