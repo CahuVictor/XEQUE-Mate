@@ -30,6 +30,7 @@ WebServerControl webServer(8080);  // Porta 80 para o servidor web
 QueueHandle_t queue;                        // Queue onde todos os módulos podem escrever
 QueueHandle_t WiFiQueue;                    // Queue onde apenas o módulo WiFi ler
 QueueHandle_t SerialQueue;                    // Queue onde apenas o módulo WiFi ler
+QueueHandle_t webserverQueue;
 const int QueueElementSize = 10;
 
 // Função da nova tarefa para imprimir o conteúdo da fila
@@ -48,7 +49,8 @@ void setup() {
                                                                                             // number of elements, each of size `message_t` and 
                                                                                             // pass the address to <QueueHandle>.
     WiFiQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    SerialQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    SerialQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    webserverQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
 
     // Check if the queue was successfully created
     if (queue == NULL) {
@@ -62,6 +64,7 @@ void setup() {
     // Set queue to module
     serialComm.setQueue(queue, SerialQueue);
     wifiManager.setQueue(queue, WiFiQueue);
+    webServer.setQueue(queue, webserverQueue);
 
     // Inicialização dos módulos
     ledControl.initialize();
@@ -124,11 +127,11 @@ void printQueueTask(void* pvParameters) {
     for (;;) {
         // Tenta ler a fila sem bloquear
         if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS) {
-            LOG_INFO(&Serial, ("[Queue Monitor] Mensagem recebida da fila: %s", receivedMessage));
+            LOG_INFO(&Serial, (String("[Queue Monitor] Mensagem recebida da fila: ") + String(receivedMessage)).c_str());
 
             if (strstr(receivedMessage, "GET IP") != nullptr || 
                 strstr(receivedMessage, "SSID:") != nullptr || 
-                strstr(receivedMessage, "PASSWORD:") != nullptr)
+                strstr(receivedMessage, "PASSWORD:") != nullptr )
             {
                 // Comandos para WiFiManager
                 if ( WiFiQueue != nullptr)
@@ -138,6 +141,14 @@ void printQueueTask(void* pvParameters) {
                 } else 
                 {
                     LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
+                }
+            } else 
+            {
+                if (strstr(receivedMessage, "GET PORT") != nullptr || 
+                    strstr(receivedMessage, "GET URL") != nullptr )
+                {
+                    xQueueSend( webserverQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+                    LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
                 }
             }
         } else {

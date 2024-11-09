@@ -12,13 +12,18 @@
 class WebServerControl {
 public:
     WebServerControl(uint16_t port = 80);    // Construtor que define a porta do servidor
+
     void initialize();                        // Inicializa o servidor web e configura as rotas
+    void setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue);     // Define a fila de envio e recebimento de dados
     void startTask();                         // Inicia a tarefa FreeRTOS para monitorar a fila
-    bool sendMessageToWebServer(const char* message); // Envia mensagem para a fila do servidor web
+
+    bool sendMessageToQueueWebServer(const char* message); // Envia mensagem para a fila do servidor web
 
 private:
     AsyncWebServer server;                    // Instância do servidor web
-    QueueHandle_t webServerQueue;             // Fila para mensagens recebidas de outros blocos
+
+    QueueHandle_t SendQueue;                    // Ponteiro para a fila de envio de dados
+    QueueHandle_t ReceiveQueue;                 // Ponteiro para a fila de recebimento de dados
 
     void webServerTask();                     // Tarefa para monitorar a fila de mensagens
     void setupRoutes();                       // Configura as rotas HTTP do servidor web
@@ -28,7 +33,8 @@ private:
         static_cast<WebServerControl*>(_this)->webServerTask();
     }
 
-    void processMessage(const char* message); // Processa e armazena mensagens recebidas
+    void processCommand();                     // Processa comandos recebidos na fila
+    
 };
 
 #endif

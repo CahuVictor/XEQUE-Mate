@@ -36,7 +36,7 @@ private:
     bool apModeActive;
 
     void monitorWiFiTask();
-    void processReceiveCommand();                     // Processa comandos recebidos na fila
+    void processCommand();                     // Processa comandos recebidos na fila
 
     void connectToWiFi();
     void startAPMode();

@@ -83,7 +83,13 @@ void SerialCommunication::processCommand(const char* command) {
         LOG_INFO(serial, "    SSID:<nome>");
         LOG_INFO(serial, "    PASSWORD:<senha>");
         LOG_INFO(serial, "    GET IP");
-    } else if (strstr(command, "GET IP") != nullptr || strstr(command, "SSID:") != nullptr || strstr(command, "PASSWORD:") != nullptr) {
+        LOG_INFO(serial, "    GET PORT");
+        LOG_INFO(serial, "    GET URL");
+    } else if ( strstr(command, "GET IP") != nullptr || 
+                strstr(command, "SSID:") != nullptr || 
+                strstr(command, "PASSWORD:") != nullptr || 
+                strstr(command, "GET PORT") != nullptr  || 
+                strstr(command, "GET URL") != nullptr ) {
         // Comandos para WiFiManager
         if ( this->SendQueue != nullptr) {
             xQueueSend( this->SendQueue , command, portMAX_DELAY);  // Envia o comando para a Queue de envio

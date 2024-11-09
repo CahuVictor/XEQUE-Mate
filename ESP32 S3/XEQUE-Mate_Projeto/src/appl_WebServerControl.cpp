@@ -1,57 +1,53 @@
 #include "appl_WebServerControl.h"
 
+const char text_webservercontrol[] =  "WebServerControl::";
+
 WebServerControl::WebServerControl(uint16_t port) 
-    : server(port), webServerQueue(nullptr) {}
+    : server(port), SendQueue(nullptr), ReceiveQueue(nullptr) {}
 
 void WebServerControl::initialize() {
-    // Inicializa a fila para mensagens de controle do servidor web
-    webServerQueue = xQueueCreate(10, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    if (webServerQueue == nullptr) {
-        LOG_ERROR(&Serial, "WebServerControl: Falha ao criar a fila de mensagens.");
-    } else {
-        LOG_INFO(&Serial, "WebServerControl: Fila de mensagens criada com sucesso.");
-    }
-
     // Configura as rotas HTTP do servidor
     setupRoutes();
-    server.begin();
-    LOG_INFO(&Serial, "WebServerControl: Servidor web iniciado.");
+    this->server.begin();
+    LOG_DEBUG(&Serial, (String(text_webservercontrol) + String("Servidor web iniciado.")).c_str());
+}
+
+void WebServerControl::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
+    this->SendQueue = SendQueue;
+    this->ReceiveQueue = ReceiveQueue;
 }
 
 void WebServerControl::startTask() {
-    xTaskCreate(taskWrapper, "WebServer Task", 4096, this, 1, NULL);
+    xTaskCreate(this->taskWrapper, "WebServer Task", 4096, this, 1, NULL);
 }
 
-bool WebServerControl::sendMessageToWebServer(const char* message) {
-    if (webServerQueue != nullptr) {
-        if (xQueueSend(webServerQueue, message, portMAX_DELAY) == pdPASS) {
+bool WebServerControl::sendMessageToQueueWebServer(const char* message) {
+    if (this->SendQueue != nullptr) {
+        if (xQueueSend(this->SendQueue, message, portMAX_DELAY) == pdPASS) {
             return true;
         } else {
-            LOG_WARNING(&Serial, "WebServerControl: Falha ao enviar mensagem para a fila do servidor.");
+            LOG_WARNING(&Serial, (String(text_webservercontrol) + String("Falha ao enviar mensagem para a fila do servidor.")).c_str());
         }
     }
     return false;
 }
 
 void WebServerControl::webServerTask() {
-    char message[QUEUE_MESSAGE_SIZE];
     for (;;) {
-        if (xQueueReceive(webServerQueue, &message, portMAX_DELAY) == pdPASS) {
-            LOG_INFO(&Serial, "WebServerControl: Processando mensagem recebida.");
-            processMessage(message);
-        }
+        this->processCommand();
+
         vTaskDelay(pdMS_TO_TICKS(100)); // Pequeno delay para liberar a CPU
     }
 }
 
 void WebServerControl::setupRoutes() {
     // Rota raiz
-    server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        handleRootRequest(request);
+    this->server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        this->handleRootRequest(request);
     });
 
     // Rota de status (exemplo)
-    server.on("/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    this->server.on("/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
         request->send(200, "text/plain", "Servidor Web em execução!");
     });
 }
@@ -61,11 +57,27 @@ void WebServerControl::handleRootRequest(AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "Bem-vindo ao Servidor Web!");
 }
 
-void WebServerControl::processMessage(const char* message) {
-    // Lida com a mensagem recebida e armazena informações para resposta na rota
-    char logMessage[128];
-    snprintf(logMessage, sizeof(logMessage), "Mensagem recebida: %s", message);
-    LOG_INFO(&Serial, logMessage);
+void WebServerControl::processCommand() {
+    if (this->ReceiveQueue != nullptr) 
+    {
+        //LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue != nullptr"));
+        char command[QUEUE_MESSAGE_SIZE];
+        if (xQueueReceive((this->ReceiveQueue), &command, pdMS_TO_TICKS(100)/*portMAX_DELAY*/)== pdPASS)
+        {
+            LOG_DEBUG(&Serial, (String(text_webservercontrol) + String("Processando mensagem recebida.")).c_str());
+            // Lida com a mensagem recebida e armazena informações para resposta na rota
+            char logMessage[128];
+            snprintf(logMessage, sizeof(logMessage), "Mensagem recebida: %s", command);
+            //LOG_DEBUG(&Serial, logMessage);
+            LOG_DEBUG(&Serial, (String(text_webservercontrol) + String(logMessage)).c_str());
 
-    // Aqui, podemos atualizar variáveis ou respostas do servidor com a mensagem
+            // Aqui, podemos atualizar variáveis ou respostas do servidor com a mensagem
+
+            // Adicionar dados a fila de envio do servidor
+            char message[]="WebServer:Dado Recebido, Processado e Respondido";
+            this->sendMessageToQueueWebServer(message);
+        }
+    } else {
+        //LOG_DEBUG(&Serial, (String(text_webservercontrol) + String("ReceiveQueue == nullptr")).c_str());
+    }
 }
