@@ -3,14 +3,11 @@ import chess
 import time
 import threading
 import requests
-<<<<<<< Updated upstream
 import random
-=======
-
-print(f"Inicio do Script")
->>>>>>> Stashed changes
 
 app = Flask(__name__)
+
+debug = True
 
 # Variáveis de controle do jogo
 board = chess.Board()
@@ -18,10 +15,8 @@ print(board)
 
 game_running = False
 game_paused = False
-<<<<<<< Updated upstream
+
 jogador_atual = "Player 1"  # Controla qual jogador está jogando (alternando entre Player 1 e Player 2)
-tabuleiro_url_player1 = "http://localhost:5001/jogar"  # URL do Player 1, que agora fará todas as jogadas
-=======
 tabuleiro_url_player = "http://localhost:5001/jogar"  # URL do Player, que agora fará todas as jogadas
 
 # Variáveis para controlar quem joga com as brancas e quem joga com as pretas
@@ -47,7 +42,6 @@ def controlar_jogadas():
             print("Erro ao enviar configuração para o Player.")
     except requests.RequestException as e:
         print(f"Erro de comunicação com o Player: {e}")
->>>>>>> Stashed changes
 
 # Função para mostrar o tabuleiro
 def mostrar_tabuleiro():
@@ -72,11 +66,7 @@ def jogar_partida():
                 game_running = False  # Interrompe o jogo quando ele acabar
                 break  # Sai do loop
 
-<<<<<<< Updated upstream
             # Envia o estado do tabuleiro para o Player 1 para ele fazer a jogada
-=======
-            # Espera pelo Player 1 fazer a jogada
->>>>>>> Stashed changes
             try:
                 # Envia o estado do tabuleiro para o Player 1 para ele fazer a jogada
                 response = requests.post(tabuleiro_url_player, json={'fen': board.fen()})
@@ -90,20 +80,21 @@ def jogar_partida():
             except requests.RequestException as e:
                 print(f"Erro ao comunicar com {jogador_atual}: {e}")
 
-<<<<<<< Updated upstream
             time.sleep(2)  # Atraso entre as jogadas para simular o ritmo do jogo    
         else:
             time.sleep(1)  # Pausa o loop enquanto o jogo estiver pausado
-=======
             time.sleep(2)  # Atraso entre as jogadas para simular o ritmo do jogo
->>>>>>> Stashed changes
 
 # Função para iniciar o jogo
 def iniciar_jogo():
     global game_running
-    game_running = True
-    thread = threading.Thread(target=jogar_partida)
-    thread.start()
+    if not game_running:
+        game_running = True
+        thread = threading.Thread(target=jogar_partida)
+        thread.start()
+        print("Jogo iniciado!")
+    else:
+        print("O jogo já está em andamento!")
 
 # Função para exibir lances possíveis e permitir escolhas
 def exibir_lances():
@@ -156,15 +147,25 @@ def desistir():
     game_running = False  # Para o jogo
     print(f"{jogador_atual} desistiu! Vitória de {vencedor}.")
 
+
+def reiniciar_jogo():
+    global board, game_running, game_paused, jogador_atual
+    board = chess.Board() # Redefine o tabuleiro para o estado inicial
+    game_running = False # Reseta o status de execução do jogo
+    game_paused = False  # Garante que o jogo não esteja pausado
+    jogador_atual = "Player 1"  # Define o jogador inicial como Player 1
+    print("\nO jogo foi reiniciado.")
+    controlar_jogadas() # Coleta novamente as escolhas dos jogadores
+
 # Função para controlar os comandos do console
 def controlar_comandos():
     global game_running, game_paused
     while True:
-        comando = input("\nDigite um comando (start, pause, resume, stop, lances, desistir): ").strip().lower()
+        comando = input("\nDigite um comando (start, pause, resume, stop, lances, desistir, reiniciar): ").strip().lower()
         
         if comando == 'start' and not game_running:
-            print("Iniciando o jogo...")
-            iniciar_jogo()
+                print("Iniciando o jogo...")
+                iniciar_jogo()
         elif comando == 'pause' and game_running:
             game_paused = True
             print("Jogo pausado.")
@@ -174,12 +175,12 @@ def controlar_comandos():
         elif comando == 'stop' and game_running:
             game_running = False
             print("Jogo finalizado.")
-            break
         elif comando == 'lances' and game_running:
             exibir_lances()
         elif comando == 'desistir' and game_running:
-            desistir()
-            break
+            desistir()   
+        elif comando == 'reiniciar' and not game_running:
+            reiniciar_jogo() # Reinicia o jogo, se ele já foi finalizado    
         else:
             print("Comando inválido ou jogo já no estado desejado.")
 
@@ -193,25 +194,17 @@ def jogar():
     """Recebe a jogada do Player 1, faz a jogada e envia de volta o novo estado."""
     fen = request.json['fen']
     board.set_fen(fen)  # Atualiza o tabuleiro com o FEN recebido
-<<<<<<< Updated upstream
     print(f"\n{jogador_atual} recebeu o FEN: {fen}")
 
     if debug:
         mostrar_tabuleiro()
-=======
-    print(f"\nPlayer 1 recebeu o FEN: {fen}")
->>>>>>> Stashed changes
 
     # O Player 1 realiza a jogada
     jogada = request.json.get('jogada', None)
     if jogada:
         try:
             board.push_uci(jogada)  # Executa a jogada recebida
-<<<<<<< Updated upstream
             print(f"Jogada feita por {jogador_atual}: {jogada}")
-=======
-            print(f"Jogada feita por Player 1: {jogada}")
->>>>>>> Stashed changes
             mostrar_tabuleiro()
 
             # Retorna o novo estado do tabuleiro após a jogada
