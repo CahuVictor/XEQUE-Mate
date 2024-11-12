@@ -37,31 +37,33 @@ class RFIDControl {
 public:
     RFIDControl();                                              // Construtor
     void initialize();                                          // Inicializa RFID e configura SPI
-    void setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue);     // Define a fila de envio e recebimento de dados
-    void startTask();                                           // Inicia a tarefa FreeRTOS para leitura contínua dos RFID
+
     void scanAll();                                             // Escaneia todos os RFID uma vez
     void setReadMode(RFIDReadMode mode);                        // Define o modo de leitura
     void setReadInterval(uint32_t interval_ms);                 // Define o intervalo entre leituras contínuas
 
-    bool sendMessageToRFIDQueue(const char* msg);               // Envia mensagens para a fila do RFID
+    void setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue);     // Define a fila de envio e recebimento de dados
+    void startTask();                                           // Inicia a tarefa FreeRTOS para leitura contínua dos RFID
 
 private:
     GPIOExpander gpioExpander;                                  // Instância do expansor de GPIO
-    QueueHandle_t SendQueue;                                    // Ponteiro para a fila de envio de dados
-    QueueHandle_t ReceiveQueue;                                 // Ponteiro para a fila de recebimento de dados
-    SemaphoreHandle_t spiMutex;                                 // Mutex para controle do barramento SPI
     RFIDReadMode readMode;                                      // Modo atual de leitura
     uint32_t readInterval;                                      // Intervalo entre leituras em modo contínuo
-    
-    void rfidControlTask();                                     // Função FreeRTOS contínua para controle de RFID
-    void processCommand();                                      // Processa comandos recebidos na fila
 
     void readRFID(uint8_t rfidID);                              // Função para ler um RFID específico
 
     int matrizPos[8][8];
+    
+    QueueHandle_t SendQueue;                                    // Ponteiro para a fila de envio de dados
+    QueueHandle_t ReceiveQueue;                                 // Ponteiro para a fila de recebimento de dados
+    SemaphoreHandle_t spiMutex;                                 // Mutex para controle do barramento SPI
+
+    bool sendMessageToRFIDQueue(const char* msg);               // Envia mensagens para a fila do RFID
+    void monitorTask();                                     // Função FreeRTOS contínua para controle de RFID
+    void processCommand();                                      // Processa comandos recebidos na fila
 
     static void taskWrapper(void* _this) {
-        static_cast<RFIDControl*>(_this)->rfidControlTask();
+        static_cast<RFIDControl*>(_this)->monitorTask();
     }
 
     #ifdef __RFID_USE_FAKE_FUNCTIONS__

@@ -12,34 +12,6 @@ void WebServerControl::initialize() {
     LOG_DEBUG(&Serial, (String(text_webservercontrol) + String("Servidor web iniciado.")).c_str());
 }
 
-void WebServerControl::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
-    this->SendQueue = SendQueue;
-    this->ReceiveQueue = ReceiveQueue;
-}
-
-void WebServerControl::startTask() {
-    xTaskCreate(this->taskWrapper, "WebServer Task", 4096, this, 1, NULL);
-}
-
-bool WebServerControl::sendMessageToQueueWebServer(const char* message) {
-    if (this->SendQueue != nullptr) {
-        if (xQueueSend(this->SendQueue, message, portMAX_DELAY) == pdPASS) {
-            return true;
-        } else {
-            LOG_WARNING(&Serial, (String(text_webservercontrol) + String("Falha ao enviar mensagem para a fila do servidor.")).c_str());
-        }
-    }
-    return false;
-}
-
-void WebServerControl::webServerTask() {
-    for (;;) {
-        this->processCommand();
-
-        vTaskDelay(pdMS_TO_TICKS(100)); // Pequeno delay para liberar a CPU
-    }
-}
-
 void WebServerControl::setupRoutes() {
     // Rota raiz
     this->server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
@@ -55,6 +27,34 @@ void WebServerControl::setupRoutes() {
 void WebServerControl::handleRootRequest(AsyncWebServerRequest *request) {
     // Responde com uma mensagem simples
     request->send(200, "text/plain", "Bem-vindo ao Servidor Web!");
+}
+
+void WebServerControl::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
+    this->SendQueue = SendQueue;
+    this->ReceiveQueue = ReceiveQueue;
+}
+
+bool WebServerControl::sendMessageToQueueWebServer(const char* message) {
+    if (this->SendQueue != nullptr) {
+        if (xQueueSend(this->SendQueue, message, portMAX_DELAY) == pdPASS) {
+            return true;
+        } else {
+            LOG_WARNING(&Serial, (String(text_webservercontrol) + String("Falha ao enviar mensagem para a fila do servidor.")).c_str());
+        }
+    }
+    return false;
+}
+
+void WebServerControl::startTask() {
+    xTaskCreate(this->taskWrapper, "WebServer Task", 4096, this, 1, NULL);
+}
+
+void WebServerControl::monitorTask() {
+    for (;;) {
+        this->processCommand();
+
+        vTaskDelay(pdMS_TO_TICKS(100)); // Pequeno delay para liberar a CPU
+    }
 }
 
 void WebServerControl::processCommand() {

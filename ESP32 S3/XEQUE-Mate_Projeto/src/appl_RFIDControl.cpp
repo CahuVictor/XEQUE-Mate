@@ -23,15 +23,6 @@ void RFIDControl::initialize() {
     LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("SPI, expansor de GPIO e mutex inicializados.")).c_str());
 }
 
-void RFIDControl::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
-    this->SendQueue = SendQueue;
-    this->ReceiveQueue = ReceiveQueue;
-}
-
-void RFIDControl::startTask() {
-    xTaskCreate(taskWrapper, "RFID Control Task", 4096, this, 1, NULL);
-}
-
 void RFIDControl::setReadMode(RFIDReadMode mode) {
     this->readMode = mode;
     LOG_DEBUG(&Serial, mode == CONTINUOUS_READ ? (String(text_rfidcontrol) + String("Modo contínuo ativado")).c_str() :
@@ -47,19 +38,6 @@ void RFIDControl::setReadInterval(uint32_t interval_ms) {
     LOG_DEBUG(&Serial, (String(text_rfidcontrol) + 
                         String("Intervalo de leitura configurado para ") +
                         String(interval_ms) + String(" ms")).c_str());
-}
-
-bool RFIDControl::sendMessageToRFIDQueue(const char* msg) {
-    if (this->SendQueue != nullptr) {
-        if (xQueueSend(this->SendQueue, msg, portMAX_DELAY) == pdPASS)
-        {
-            LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Sucesso ao enviar mensagem para a fila de RFID.")).c_str());
-            return true;
-        } else {
-            LOG_WARNING(&Serial, (String(text_rfidcontrol) + String("Falha ao enviar mensagem para a fila de RFID.")).c_str());
-        }
-    }
-    return false;
 }
 
 void RFIDControl::scanAll() {
@@ -90,7 +68,29 @@ void RFIDControl::readRFID(uint8_t rfidID) {
     #endif
 }
 
-void RFIDControl::rfidControlTask() {
+void RFIDControl::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
+    this->SendQueue = SendQueue;
+    this->ReceiveQueue = ReceiveQueue;
+}
+
+void RFIDControl::startTask() {
+    xTaskCreate(taskWrapper, "RFID Control Task", 4096, this, 1, NULL);
+}
+
+bool RFIDControl::sendMessageToRFIDQueue(const char* msg) {
+    if (this->SendQueue != nullptr) {
+        if (xQueueSend(this->SendQueue, msg, portMAX_DELAY) == pdPASS)
+        {
+            LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Sucesso ao enviar mensagem para a fila de RFID.")).c_str());
+            return true;
+        } else {
+            LOG_WARNING(&Serial, (String(text_rfidcontrol) + String("Falha ao enviar mensagem para a fila de RFID.")).c_str());
+        }
+    }
+    return false;
+}
+
+void RFIDControl::monitorTask() {
     char msg[32];
     for (;;) {
         if (this->readMode == CONTINUOUS_READ) {

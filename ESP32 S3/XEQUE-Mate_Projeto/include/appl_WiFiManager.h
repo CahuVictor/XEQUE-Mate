@@ -22,6 +22,7 @@ class WiFiManager {
 public:
     WiFiManager();
     void initialize();
+
     void setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue);     // Define a fila de envio e recebimento de dados
     void startTask();                    // Inicia a tarefa FreeRTOS para gerenciar WiFi
 
@@ -30,13 +31,7 @@ public:
 private:
     AsyncWebServer server;
     DNSServer dnsServer;
-    //SemaphoreHandle_t wifiSemaphore;
-    QueueHandle_t SendQueue;                    // Ponteiro para a fila de envio de dados
-    QueueHandle_t ReceiveQueue;                 // Ponteiro para a fila de recebimento de dados
     bool apModeActive;
-
-    void monitorWiFiTask();
-    void processCommand();                     // Processa comandos recebidos na fila
 
     void connectToWiFi();
     void startAPMode();
@@ -48,8 +43,15 @@ private:
 
     //TaskHandle_t wifiTaskHandle;  // Adiciona o handle da tarefa WiFi para receber notificações
 
+    //SemaphoreHandle_t wifiSemaphore;
+    QueueHandle_t SendQueue;                    // Ponteiro para a fila de envio de dados
+    QueueHandle_t ReceiveQueue;                 // Ponteiro para a fila de recebimento de dados
+
+    void monitorTask();
+    void processCommand();                     // Processa comandos recebidos na fila
+
     static void taskWrapper(void* param) {
-        static_cast<WiFiManager*>(param)->monitorWiFiTask();
+        static_cast<WiFiManager*>(param)->monitorTask();
     }
 };
 

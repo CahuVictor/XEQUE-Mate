@@ -8,19 +8,6 @@ void WiFiManager::initialize() {
     connectToWiFi();
 }
 
-void WiFiManager::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
-    this->SendQueue = SendQueue;
-    this->ReceiveQueue = ReceiveQueue;
-}
-
-void WiFiManager::startTask() {
-    xTaskCreate(taskWrapper, "WiFi Task",                                   // A name just for humans
-                4096,                                                       // The stack size can be checked by calling `uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);`
-                this,                                                       // 
-                1,                                                          // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-                NULL/*&wifiTaskHandle*/);                                           // Salva o handle da tarefa
-}
-
 void WiFiManager::connectToWiFi() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -90,7 +77,30 @@ void WiFiManager::handleWiFiConfig(AsyncWebServerRequest *request) {
     request->send(200, "text/html", "Configuração recebida! Tentando conectar...");
 }
 
-void WiFiManager::monitorWiFiTask() {
+void WiFiManager::printIPAddress() {
+    if (WiFi.status() == WL_CONNECTED) {
+        LOG_INFO(&Serial, (String("WiFiManager: IP conectado: ") + WiFi.localIP().toString()).c_str());
+    } else if (WiFi.getMode() == WIFI_AP) {
+        LOG_INFO(&Serial, (String("WiFiManager: IP modo AP: ") + WiFi.softAPIP().toString()).c_str());
+    } else {
+        LOG_WARNING(&Serial, "WiFiManager: Nenhuma conexão WiFi ativa.");
+    }
+}
+
+void WiFiManager::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
+    this->SendQueue = SendQueue;
+    this->ReceiveQueue = ReceiveQueue;
+}
+
+void WiFiManager::startTask() {
+    xTaskCreate(taskWrapper, "WiFi Task",                                   // A name just for humans
+                4096,                                                       // The stack size can be checked by calling `uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);`
+                this,                                                       // 
+                1,                                                          // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+                NULL/*&wifiTaskHandle*/);                                           // Salva o handle da tarefa
+}
+
+void WiFiManager::monitorTask() {
     for (;;) {
         if (WiFi.status() != WL_CONNECTED && !apModeActive) {
             LOG_INFO(&Serial, "WiFiManager: WiFi desconectado. Ativando modo AP...");
@@ -142,15 +152,5 @@ void WiFiManager::processCommand() {
 
     } else {
         //LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue == nullptr"));
-    }
-}
-
-void WiFiManager::printIPAddress() {
-    if (WiFi.status() == WL_CONNECTED) {
-        LOG_INFO(&Serial, (String("WiFiManager: IP conectado: ") + WiFi.localIP().toString()).c_str());
-    } else if (WiFi.getMode() == WIFI_AP) {
-        LOG_INFO(&Serial, (String("WiFiManager: IP modo AP: ") + WiFi.softAPIP().toString()).c_str());
-    } else {
-        LOG_WARNING(&Serial, "WiFiManager: Nenhuma conexão WiFi ativa.");
     }
 }
