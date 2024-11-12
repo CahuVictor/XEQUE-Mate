@@ -48,16 +48,15 @@ void setup() {
     LOG_INFO(&Serial, "Sistema inicializado com sucesso.");
 
     // Inicializa e configura a fila
-    queue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);        // Create the queue which will have <QueueElementSize>
+    queue =             xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);  // Create the queue which will have <QueueElementSize>
                                                                                             // number of elements, each of size `message_t` and 
                                                                                             // pass the address to <QueueHandle>.
-    WiFiQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    SerialQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    webserverQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    RFIDControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    LedControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    LCDControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-
+    WiFiQueue =         xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    SerialQueue =       xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    webserverQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    RFIDControlQueue =  xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LedControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LCDControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
 
     // Check if the queue was successfully created
     if (queue == NULL) {
@@ -132,9 +131,11 @@ void loop()
 // Função da nova tarefa para imprimir o conteúdo da fila
 void printQueueTask(void* pvParameters) {
     char receivedMessage[64];  // Buffer para armazenar a mensagem da fila
-    for (;;) {
+    for (;;)
+    {
         // Tenta ler a fila sem bloquear
-        if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS) {
+        if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS)
+        {
             LOG_INFO(&Serial, (String("[Queue Monitor] Mensagem recebida da fila: ") + String(receivedMessage)).c_str());
 
             if (strstr(receivedMessage, "GET IP") != nullptr || 
@@ -157,9 +158,17 @@ void printQueueTask(void* pvParameters) {
                 {
                     xQueueSend( webserverQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
                     LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
+                } else 
+                {
+                    if (strstr(receivedMessage, "READ RFID") != nullptr )
+                    {
+                        xQueueSend( RFIDControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+                        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do RFIDControl. Comando: ") + String(receivedMessage)).c_str());
+                    }
                 }
             }
-        } else {
+        } else
+        {
             LOG_INFO(&Serial, "[Queue Monitor] Nenhuma mensagem na fila.");
         }
 

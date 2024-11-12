@@ -64,7 +64,7 @@ bool RFIDControl::sendMessageToRFIDQueue(const char* msg) {
 
 void RFIDControl::scanAll() {
     LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Iniciando escaneamento de todos os 64 RFID.")).c_str());
-    #ifdef USE_FAKE_FUNCTIONS
+    #ifdef __RFID_USE_FAKE_FUNCTIONS__
         this->updateMatrizFake();
     #endif
     for (uint8_t i = 0; i < 64; i++) {
@@ -72,59 +72,13 @@ void RFIDControl::scanAll() {
     }
 }
 
-void RFIDControl::rfidControlTask() {
-    char msg[32];
-    for (;;) {
-        if (this->readMode == CONTINUOUS_READ) {
-            this->scanAll();
-            vTaskDelay(pdMS_TO_TICKS(this->readInterval));
-        } 
-        else 
-        {
-            if (this->readMode == SINGLE_READ)
-            {
-                if (xQueueReceive(this->ReceiveQueue, msg, portMAX_DELAY) == pdPASS)
-                {
-                    if (msg == "READ RFID")
-                    {
-                        LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Escaneando RFID conforme mensagem recebida.")).c_str());
-                        scanAll();
-                        this->readMode = READ_DISABLED;  // Após a leitura única, desativa o modo de leitura
-                    }
-                }
-            }
-            else
-            {
-                vTaskDelay(pdMS_TO_TICKS(100));  // Pequeno delay para evitar uso excessivo da CPU
-            }
-        }
-    }
-}
-
 void RFIDControl::readRFID(uint8_t rfidID) {
     gpioExpander.selectChannel(rfidID % 16);  // Seleciona o canal do RFID no multiplexador
 
-    #ifdef USE_FAKE_FUNCTIONS
-        int statusPos = this->matrizPos[rfidID/8][rfidID%8];
-        String StatusPosText = "";
-        if (statusPos == 0) StatusPosText = "ausente";
-        if (statusPos == 1) StatusPosText = "peão Branco";
-        if (statusPos == -1) StatusPosText = "peão Preto";
-        if (statusPos == 2) StatusPosText = "cavalo Branco";
-        if (statusPos == -2) StatusPosText = "cavalo Preto";
-        if (statusPos == 3) StatusPosText = "bispo Branco";
-        if (statusPos == -3) StatusPosText = "bispo Preto";
-        if (statusPos == 4) StatusPosText = "torre Branco";
-        if (statusPos == -4) StatusPosText = "torre Preto";
-        if (statusPos == 5) StatusPosText = "rainha Branco";
-        if (statusPos == -5) StatusPosText = "rainha Preto";
-        if (statusPos == 6) StatusPosText = "rei Branco";
-        if (statusPos == -6) StatusPosText = "rei Preto";
-        //char buffer[64];
-        //snprintf(buffer, sizeof(buffer), "RFID %d: Status fictício %s", rfidID, fakeStatus ? "presente" : "ausente");
-        //LOG_INFO(&Serial, buffer);
+    #ifdef __RFID_USE_FAKE_FUNCTIONS__
         LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("RFID " + String(rfidID) + 
-                            String(": Status fictício ") + StatusPosText)).c_str());
+                            String(": Status fictício ") + 
+                            getPiece( this->matrizPos[rfidID/8][rfidID%8] ))).c_str());
     #else
         if (xSemaphoreTake(spiMutex, portMAX_DELAY) == pdTRUE) {
             // Código real para comunicação SPI com o RFID
@@ -136,12 +90,75 @@ void RFIDControl::readRFID(uint8_t rfidID) {
     #endif
 }
 
+void RFIDControl::rfidControlTask() {
+    char msg[32];
+    for (;;) {
+        if (this->readMode == CONTINUOUS_READ) {
+            this->scanAll();
+            vTaskDelay(pdMS_TO_TICKS(this->readInterval));
+        } else
+        {
+            if (this->readMode == SINGLE_READ)
+            {
+                this->scanAll();
+                this->readMode = READ_DISABLED;  // Após a leitura única, desativa o modo de leitura
+            }
+        }
+
+        this->processCommand();  // Processa comandos recebidos
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+void RFIDControl::processCommand() {
+    LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Verificando ReceiveQueue...")).c_str());
+    if (this->ReceiveQueue != nullptr) {
+        LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("ReceiveQueue != nullptr")).c_str());
+        char command[QUEUE_MESSAGE_SIZE];
+        if (xQueueReceive((this->ReceiveQueue), &command, portMAX_DELAY/*pdMS_TO_TICKS(100)*/)== pdPASS)
+        {
+            LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("ReceiveQueue = ") + String(command)).c_str());
+            if (strncmp(command, "READ RFID", 9) == 0)
+            {
+                //LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Escaneando RFID conforme mensagem recebida.")).c_str());
+                //this->scanAll();
+                //this->readMode = READ_DISABLED;  // Após a leitura única, desativa o modo de leitura
+                LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Atualizando modo para leitura única.")).c_str());
+                this->readMode = SINGLE_READ;
+            } else
+            {
+                LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Comando recebido desconhecido.")).c_str());
+            }
+        }
+    }
+}
 
 
 
 
 
-#ifdef USE_FAKE_FUNCTIONS
+
+#ifdef __RFID_USE_FAKE_FUNCTIONS__
+    String RFIDControl::getPiece(int statusPos)
+    {
+        if (statusPos ==  0) return "ausente";
+        if (statusPos ==  1) return "peão Branco";
+        if (statusPos == -1) return "peão Preto";
+        if (statusPos ==  2) return "cavalo Branco";
+        if (statusPos == -2) return "cavalo Preto";
+        if (statusPos ==  3) return "bispo Branco";
+        if (statusPos == -3) return "bispo Preto";
+        if (statusPos ==  4) return "torre Branco";
+        if (statusPos == -4) return "torre Preto";
+        if (statusPos ==  5) return "rainha Branco";
+        if (statusPos == -5) return "rainha Preto";
+        if (statusPos ==  6) return "rei Branco";
+        if (statusPos == -6) return "rei Preto";
+        LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Cadastro de peça inexistente")).c_str());
+        return "ERROR";
+    }
+    
     void RFIDControl::updateMatrizFake()
     {
         LOG_DEBUG(&Serial, (String(text_rfidcontrol) + String("Funcões fictícias ativadas.")).c_str());

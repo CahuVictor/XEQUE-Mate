@@ -10,7 +10,7 @@
 #include "appl_GPIOExpander.h"
 
 // Define `USE_FAKE_FUNCTIONS` para usar valores fictícios nas funções
-#define USE_FAKE_FUNCTIONS
+#define __RFID_USE_FAKE_FUNCTIONS__
 
 #define PEAO_BRANCO                                     1
 #define CAVALO_BRANCO                                   2
@@ -24,6 +24,8 @@
 #define TORRE_PRETO                                    -4
 #define RAINHA_PRETO                                   -5
 #define REI_PRETO                                      -6
+
+#define QUEUE_MESSAGE_SIZE 64
 
 enum RFIDReadMode {
     SINGLE_READ,
@@ -50,7 +52,10 @@ private:
     SemaphoreHandle_t spiMutex;                                 // Mutex para controle do barramento SPI
     RFIDReadMode readMode;                                      // Modo atual de leitura
     uint32_t readInterval;                                      // Intervalo entre leituras em modo contínuo
+    
     void rfidControlTask();                                     // Função FreeRTOS contínua para controle de RFID
+    void processCommand();                                      // Processa comandos recebidos na fila
+
     void readRFID(uint8_t rfidID);                              // Função para ler um RFID específico
 
     int matrizPos[8][8];
@@ -59,7 +64,9 @@ private:
         static_cast<RFIDControl*>(_this)->rfidControlTask();
     }
 
-    #ifdef USE_FAKE_FUNCTIONS
+    #ifdef __RFID_USE_FAKE_FUNCTIONS__
+        String getPiece(int statusPos);
+        
         void updateMatrizFake();
     #endif
 };
