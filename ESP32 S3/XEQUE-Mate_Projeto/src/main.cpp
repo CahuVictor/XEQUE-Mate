@@ -27,10 +27,13 @@ WebServerControl webServer(8080);  // Porta 80 para o servidor web
     StateMachine stateMachine;*/
 
 // Queue FreeRtos
-QueueHandle_t queue;                        // Queue onde todos os módulos podem escrever
-QueueHandle_t WiFiQueue;                    // Queue onde apenas o módulo WiFi ler
-QueueHandle_t SerialQueue;                    // Queue onde apenas o módulo WiFi ler
-QueueHandle_t webserverQueue;
+QueueHandle_t queue;                                    // Queue onde todos os módulos podem escrever
+QueueHandle_t WiFiQueue;                                // Queue onde o módulo WiFi recebe os dados
+QueueHandle_t SerialQueue;                              // Queue onde o módulo Serial recebe os dados
+QueueHandle_t webserverQueue;                           // Queue onde o módulo WebServer recebe os dados
+QueueHandle_t RFIDControlQueue;                         // Queue onde o módulo RFIDControl recebe os dados
+QueueHandle_t LedControlQueue;                          // Queue onde o módulo LedControl recebe os dados
+QueueHandle_t LCDControlQueue;                          // Queue onde o módulo LCDControl recebe os dados
 const int QueueElementSize = 10;
 
 // Função da nova tarefa para imprimir o conteúdo da fila
@@ -50,7 +53,11 @@ void setup() {
                                                                                             // pass the address to <QueueHandle>.
     WiFiQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
     SerialQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    webserverQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    webserverQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    RFIDControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LedControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LCDControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+
 
     // Check if the queue was successfully created
     if (queue == NULL) {
@@ -65,6 +72,10 @@ void setup() {
     serialComm.setQueue(queue, SerialQueue);
     wifiManager.setQueue(queue, WiFiQueue);
     webServer.setQueue(queue, webserverQueue);
+    //ledControl.setQueue(queue, LedControlQueue);
+    rfidControl.setQueue(queue, RFIDControlQueue);
+    //buttonControl.setQueue(queue, webserverQueue);
+    //lcdControl.setQueue(queue, LCDControlQueue);
 
     // Inicialização dos módulos
     ledControl.initialize();
@@ -73,17 +84,14 @@ void setup() {
     lcdControl.initialize();
     serialComm.initialize();
     wifiManager.initialize();
+    webServer.initialize();
 
     // Inicia as tarefas
     serialComm.startTask();
-    wifiManager.startTask();
-    webServer.initialize();
         /*i2cComm.initialize();
         powerMonitor.initialize();
         supervisor.initialize();
         stateMachine.initialize();*/
-
-    // Inicia tarefas FreeRTOS para cada módulo (exemplo)
     wifiManager.startTask();            //  http://http://192.168.4.1/
     serialComm.startTask();
     ledControl.startTask();

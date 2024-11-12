@@ -12,6 +12,19 @@
 // Define `USE_FAKE_FUNCTIONS` para usar valores fictícios nas funções
 #define USE_FAKE_FUNCTIONS
 
+#define PEAO_BRANCO                                     1
+#define CAVALO_BRANCO                                   2
+#define BISPO_BRANCO                                    3
+#define TORRE_BRANCO                                    4
+#define RAINHA_BRANCO                                   5
+#define REI_BRANCO                                      6
+#define PEAO_PRETO                                     -1
+#define CAVALO_PRETO                                   -2
+#define BISPO_PRETO                                    -3
+#define TORRE_PRETO                                    -4
+#define RAINHA_PRETO                                   -5
+#define REI_PRETO                                      -6
+
 enum RFIDReadMode {
     SINGLE_READ,
     CONTINUOUS_READ,
@@ -20,27 +33,35 @@ enum RFIDReadMode {
 
 class RFIDControl {
 public:
-    RFIDControl();                              // Construtor
-    void initialize();                          // Inicializa RFID e configura SPI
-    void startTask();                           // Inicia a tarefa FreeRTOS para leitura contínua dos RFID
-    void scanAll();                             // Escaneia todos os RFID uma vez
-    void setReadMode(RFIDReadMode mode);        // Define o modo de leitura
-    void setReadInterval(uint32_t interval_ms); // Define o intervalo entre leituras contínuas
+    RFIDControl();                                              // Construtor
+    void initialize();                                          // Inicializa RFID e configura SPI
+    void setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue);     // Define a fila de envio e recebimento de dados
+    void startTask();                                           // Inicia a tarefa FreeRTOS para leitura contínua dos RFID
+    void scanAll();                                             // Escaneia todos os RFID uma vez
+    void setReadMode(RFIDReadMode mode);                        // Define o modo de leitura
+    void setReadInterval(uint32_t interval_ms);                 // Define o intervalo entre leituras contínuas
 
-    bool sendMessageToRFIDQueue(const char* msg); // Envia mensagens para a fila do RFID
+    bool sendMessageToRFIDQueue(const char* msg);               // Envia mensagens para a fila do RFID
 
 private:
-    GPIOExpander gpioExpander;            // Instância do expansor de GPIO
-    QueueHandle_t rfidQueue;              // Fila para mensagens de controle do RFID
-    SemaphoreHandle_t spiMutex;           // Mutex para controle do barramento SPI
-    RFIDReadMode readMode;                // Modo atual de leitura
-    uint32_t readInterval;                // Intervalo entre leituras em modo contínuo
-    void rfidControlTask();               // Função FreeRTOS contínua para controle de RFID
-    void readRFID(uint8_t rfidID);        // Função para ler um RFID específico
+    GPIOExpander gpioExpander;                                  // Instância do expansor de GPIO
+    QueueHandle_t SendQueue;                                    // Ponteiro para a fila de envio de dados
+    QueueHandle_t ReceiveQueue;                                 // Ponteiro para a fila de recebimento de dados
+    SemaphoreHandle_t spiMutex;                                 // Mutex para controle do barramento SPI
+    RFIDReadMode readMode;                                      // Modo atual de leitura
+    uint32_t readInterval;                                      // Intervalo entre leituras em modo contínuo
+    void rfidControlTask();                                     // Função FreeRTOS contínua para controle de RFID
+    void readRFID(uint8_t rfidID);                              // Função para ler um RFID específico
+
+    int matrizPos[8][8];
 
     static void taskWrapper(void* _this) {
         static_cast<RFIDControl*>(_this)->rfidControlTask();
     }
+
+    #ifdef USE_FAKE_FUNCTIONS
+        void updateMatrizFake();
+    #endif
 };
 
 #endif
