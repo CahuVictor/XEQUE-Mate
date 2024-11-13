@@ -71,7 +71,7 @@ void setup() {
     serialComm.setQueue(queue, SerialQueue);
     wifiManager.setQueue(queue, WiFiQueue);
     webServer.setQueue(queue, webserverQueue);
-    //ledControl.setQueue(queue, LedControlQueue);
+    ledControl.setQueue(queue, LedControlQueue);
     rfidControl.setQueue(queue, RFIDControlQueue);
     //buttonControl.setQueue(queue, webserverQueue);
     //lcdControl.setQueue(queue, LCDControlQueue);

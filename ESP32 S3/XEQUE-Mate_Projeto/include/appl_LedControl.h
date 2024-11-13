@@ -7,25 +7,34 @@
 #include "appl_MyLogger.h"
 
 // Define `USE_FAKE_FUNCTIONS` para usar valores fictícios nas funções.
-#define USE_FAKE_FUNCTIONS
+#define __LED_USE_FAKE_FUNCTIONS__
 
 class LedControl {
 public:
     LedControl();                                  // Construtor
     void initialize();                             // Inicializa o controle de LEDs
+
     void setBrightness(uint8_t level);             // Define o brilho dos LEDs
     void updateLEDs(const uint32_t* colorData, size_t length); // Atualiza os LEDs
-    void startTask();                              // Inicia a tarefa FreeRTOS de monitoramento
-    void sendMessage(const char* msg);             // Envia mensagem para a fila de controle de LEDs
+
+    void setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue);     // Define a fila de envio e recebimento de dados
+    void startTask();                    // Inicia a tarefa FreeRTOS para gerenciar WiFi
 
 private:
-    QueueHandle_t ledQueue;                        // Fila para mensagens de controle de LEDs
-    void ledControlTask();                         // Função FreeRTOS contínua para controle de LEDs
-    void updateFakeLEDs();                         // Função fictícia para simular LEDs
+    QueueHandle_t SendQueue;                    // Ponteiro para a fila de envio de dados
+    QueueHandle_t ReceiveQueue;                 // Ponteiro para a fila de recebimento de dados
 
-    static void taskWrapper(void* _this) {
-        static_cast<LedControl*>(_this)->ledControlTask();
+    bool sendMessageToLedControlQueue(const char* message); // Envia mensagem para a fila do Led Control
+    void monitorTask();
+    void processCommand();                     // Processa comandos recebidos na fila
+
+    static void taskWrapper(void* param) {
+        static_cast<LedControl*>(param)->monitorTask();
     }
+
+    #ifdef __LED_USE_FAKE_FUNCTIONS__
+        void updateFakeLEDs();                         // Função fictícia para simular LEDs
+    #endif
 };
 
 #endif
