@@ -41,6 +41,8 @@ void printQueueTask(void* pvParameters);
 
 void CreateQueues();
 
+void setModulesQueue();
+
 void initializeTasks();
 
 void startTasks();
@@ -57,39 +59,13 @@ void setup() {
     CreateQueues();
 
     // Set queue to module
-    serialComm.setQueue(queue, SerialQueue);
-    wifiManager.setQueue(queue, WiFiQueue);
-    webServer.setQueue(queue, webserverQueue);
-    ledControl.setQueue(queue, LedControlQueue);
-    rfidControl.setQueue(queue, RFIDControlQueue);
-    //buttonControl.setQueue(queue, webserverQueue);
-    lcdControl.setQueue(queue, LCDControlQueue);
+    setModulesQueue();
 
     // Inicialização dos módulos
-    ledControl.initialize();
-    rfidControl.initialize();
-        //buttonControl.initialize();
-    lcdControl.initialize();
-    serialComm.initialize();
-    wifiManager.initialize();
-    webServer.initialize();
-        /*i2cComm.initialize();
-        powerMonitor.initialize();
-        supervisor.initialize();
-        stateMachine.initialize();*/
+    initializeTasks();
 
     // Inicia as tarefas
-    serialComm.startTask();
-    wifiManager.startTask();            //  http://http://192.168.4.1/
-    serialComm.startTask();
-    ledControl.startTask();
-    rfidControl.startTask();
-    lcdControl.startTask();
-    /*xTaskCreate([](void*) { buttonControl.readButtons(); }, "Button Task", 2048, NULL, 1, NULL);
-    xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
-    xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
-    webServer.startTask();                  //  http://<IP_DO_ESP>/     http://<IP_DO_ESP>/status
-    //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
+    startTasks();
 
     // Configurações de teste
     
@@ -137,6 +113,44 @@ void CreateQueues() {
             delay(1000);  // Halt at this point as is not possible to continue
         }
     }
+}
+
+void setModulesQueue() {
+    serialComm.setQueue(queue, SerialQueue);
+    wifiManager.setQueue(queue, WiFiQueue);
+    webServer.setQueue(queue, webserverQueue);
+    ledControl.setQueue(queue, LedControlQueue);
+    rfidControl.setQueue(queue, RFIDControlQueue);
+    //buttonControl.setQueue(queue, webserverQueue);
+    lcdControl.setQueue(queue, LCDControlQueue);
+}
+
+void initializeTasks() {
+    ledControl.initialize();
+    rfidControl.initialize();
+        //buttonControl.initialize();
+    lcdControl.initialize();
+    serialComm.initialize();
+    wifiManager.initialize();
+    webServer.initialize();
+        /*i2cComm.initialize();
+        powerMonitor.initialize();
+        supervisor.initialize();
+        stateMachine.initialize();*/
+}
+
+void startTasks() {
+    serialComm.startTask();
+    wifiManager.startTask();            //  http://http://192.168.4.1/
+    serialComm.startTask();
+    ledControl.startTask();
+    rfidControl.startTask();
+    lcdControl.startTask();
+    /*xTaskCreate([](void*) { buttonControl.readButtons(); }, "Button Task", 2048, NULL, 1, NULL);
+    xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
+    xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
+    webServer.startTask();                  //  http://<IP_DO_ESP>/     http://<IP_DO_ESP>/status
+    //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
 }
 
 // Função da nova tarefa para imprimir o conteúdo da fila
