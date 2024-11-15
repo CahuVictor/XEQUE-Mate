@@ -39,6 +39,12 @@ const int QueueElementSize = 10;
 // Função da nova tarefa para imprimir o conteúdo da fila
 void printQueueTask(void* pvParameters);
 
+void CreateQueues();
+
+void initializeTasks();
+
+void startTasks();
+
 void setup() {
     // Inicialização da comunicação serial
     Serial.begin(115200);
@@ -47,25 +53,8 @@ void setup() {
     MyLogger::initialize();  // Inicializa o logger com proteção de mutex se FreeRTOS estiver disponível
     LOG_INFO(&Serial, "Sistema inicializado com sucesso.");
 
-    // Inicializa e configura a fila
-    queue =             xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);  // Create the queue which will have <QueueElementSize>
-                                                                                            // number of elements, each of size `message_t` and 
-                                                                                            // pass the address to <QueueHandle>.
-    WiFiQueue =         xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    SerialQueue =       xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    webserverQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    RFIDControlQueue =  xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    LedControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    LCDControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-
-    // Check if the queue was successfully created
-    if (queue == NULL) {
-        LOG_INFO(&Serial, "Queue could not be created. Halt.");
-        while (1)
-        {
-            delay(1000);  // Halt at this point as is not possible to continue
-        }
-    }
+    // Cria filas
+    CreateQueues();
 
     // Set queue to module
     serialComm.setQueue(queue, SerialQueue);
@@ -74,7 +63,7 @@ void setup() {
     ledControl.setQueue(queue, LedControlQueue);
     rfidControl.setQueue(queue, RFIDControlQueue);
     //buttonControl.setQueue(queue, webserverQueue);
-    //lcdControl.setQueue(queue, LCDControlQueue);
+    lcdControl.setQueue(queue, LCDControlQueue);
 
     // Inicialização dos módulos
     ledControl.initialize();
@@ -84,17 +73,18 @@ void setup() {
     serialComm.initialize();
     wifiManager.initialize();
     webServer.initialize();
-
-    // Inicia as tarefas
-    serialComm.startTask();
         /*i2cComm.initialize();
         powerMonitor.initialize();
         supervisor.initialize();
         stateMachine.initialize();*/
+
+    // Inicia as tarefas
+    serialComm.startTask();
     wifiManager.startTask();            //  http://http://192.168.4.1/
     serialComm.startTask();
     ledControl.startTask();
     rfidControl.startTask();
+    lcdControl.startTask();
     /*xTaskCreate([](void*) { buttonControl.readButtons(); }, "Button Task", 2048, NULL, 1, NULL);
     xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
     xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
@@ -126,6 +116,27 @@ void loop()
     LOG_INFO(&Serial, "Loop principal em execução.");
 
     delay(10000);
+}
+
+void CreateQueues() {
+    queue =             xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);  // Create the queue which will have <QueueElementSize>
+                                                                                            // number of elements, each of size `message_t` and 
+                                                                                            // pass the address to <QueueHandle>.
+    WiFiQueue =         xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    SerialQueue =       xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    webserverQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    RFIDControlQueue =  xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LedControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LCDControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+
+    // Check if the queue was successfully created
+    if (queue == NULL) {
+        LOG_INFO(&Serial, "Queue could not be created. Halt.");
+        while (1)
+        {
+            delay(1000);  // Halt at this point as is not possible to continue
+        }
+    }
 }
 
 // Função da nova tarefa para imprimir o conteúdo da fila
@@ -164,6 +175,13 @@ void printQueueTask(void* pvParameters) {
                     {
                         xQueueSend( RFIDControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
                         LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do RFIDControl. Comando: ") + String(receivedMessage)).c_str());
+                    } else 
+                    {
+                        if (strstr(receivedMessage, "SEND LCD:") != nullptr )
+                        {
+                            xQueueSend( LCDControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+                            LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do LCDControl. Comando: ") + String(receivedMessage)).c_str());
+                        }
                     }
                 }
             }

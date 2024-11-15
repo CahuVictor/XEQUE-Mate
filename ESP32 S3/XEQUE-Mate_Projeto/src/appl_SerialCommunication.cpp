@@ -87,12 +87,14 @@ void SerialCommunication::processCommand(const char* command) {
         LOG_INFO(serial, "    GET PORT");
         LOG_INFO(serial, "    GET URL");
         LOG_INFO(serial, "    READ RFID");
+        LOG_INFO(serial, "    SEND LCD:<msg>");
     } else if ( strstr(command, "GET IP") != nullptr || 
                 strstr(command, "SSID:") != nullptr || 
                 strstr(command, "PASSWORD:") != nullptr || 
                 strstr(command, "GET PORT") != nullptr  || 
                 strstr(command, "GET URL") != nullptr || 
-                strstr(command, "READ RFID") != nullptr) {
+                strstr(command, "READ RFID") != nullptr || 
+                strstr(command, "SEND LCD:") != nullptr) {
         // Comandos para WiFiManager
         if ( this->SendQueue != nullptr) {
             xQueueSend( this->SendQueue , command, portMAX_DELAY);  // Envia o comando para a Queue de envio
