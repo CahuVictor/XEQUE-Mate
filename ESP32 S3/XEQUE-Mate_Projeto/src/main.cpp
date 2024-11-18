@@ -3,7 +3,7 @@
 #include "appl_MyLogger.h"
 #include "appl_LedControl.h"
 #include "appl_RFIDControl.h"
-    //#include "ButtonControl.h"
+#include "appl_ButtonControl.h"
 #include "appl_LCDControl.h"
 #include "appl_SerialCommunication.h"
 #include "appl_WiFiManager.h"
@@ -16,7 +16,8 @@
 // Instâncias globais das classes
 LedControl ledControl;
 RFIDControl rfidControl;
-    //ButtonControl buttonControl;
+uint8_t buttonPins[] = {2, 4, 6, 8};  // Define os pinos dos 4 botões
+ButtonControl buttonControl( buttonPins );  // Define os pinos dos 4 botões (ajuste conforme sua configuração de hardware)
 LCDControl lcdControl;
 SerialCommunication serialComm(&Serial);  // Passa a interface Serial como parâmetro
 WiFiManager wifiManager;
@@ -34,6 +35,7 @@ QueueHandle_t webserverQueue;                           // Queue onde o módulo 
 QueueHandle_t RFIDControlQueue;                         // Queue onde o módulo RFIDControl recebe os dados
 QueueHandle_t LedControlQueue;                          // Queue onde o módulo LedControl recebe os dados
 QueueHandle_t LCDControlQueue;                          // Queue onde o módulo LCDControl recebe os dados
+QueueHandle_t buttonControlQueue;                       // Queue onde o módulo ButtonControl recebe os dados
 const int QueueElementSize = 10;
 
 // Função da nova tarefa para imprimir o conteúdo da fila
@@ -58,7 +60,7 @@ void setup() {
     // Cria filas
     CreateQueues();
 
-    // Set queue to module
+    // Define as filas nos módulos
     setModulesQueue();
 
     // Inicialização dos módulos
@@ -98,12 +100,13 @@ void CreateQueues() {
     queue =             xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);  // Create the queue which will have <QueueElementSize>
                                                                                             // number of elements, each of size `message_t` and 
                                                                                             // pass the address to <QueueHandle>.
-    WiFiQueue =         xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    SerialQueue =       xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    webserverQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    RFIDControlQueue =  xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    LedControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    LCDControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    WiFiQueue =          xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    SerialQueue =        xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    webserverQueue =     xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    RFIDControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LedControlQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LCDControlQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    buttonControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
 
     // Check if the queue was successfully created
     if (queue == NULL) {
@@ -121,14 +124,14 @@ void setModulesQueue() {
     webServer.setQueue(queue, webserverQueue);
     ledControl.setQueue(queue, LedControlQueue);
     rfidControl.setQueue(queue, RFIDControlQueue);
-    //buttonControl.setQueue(queue, webserverQueue);
+    buttonControl.setQueue(queue, buttonControlQueue);
     lcdControl.setQueue(queue, LCDControlQueue);
 }
 
 void initializeTasks() {
     ledControl.initialize();
     rfidControl.initialize();
-        //buttonControl.initialize();
+    buttonControl.initialize();
     lcdControl.initialize();
     serialComm.initialize();
     wifiManager.initialize();
@@ -142,14 +145,13 @@ void initializeTasks() {
 void startTasks() {
     serialComm.startTask();
     wifiManager.startTask();            //  http://http://192.168.4.1/
-    serialComm.startTask();
     ledControl.startTask();
     rfidControl.startTask();
     lcdControl.startTask();
-    /*xTaskCreate([](void*) { buttonControl.readButtons(); }, "Button Task", 2048, NULL, 1, NULL);
-    xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
-    xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
+    buttonControl.startTask();
     webServer.startTask();                  //  http://<IP_DO_ESP>/     http://<IP_DO_ESP>/status
+    /*xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
+    xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
     //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
 }
 
@@ -195,6 +197,13 @@ void printQueueTask(void* pvParameters) {
                         {
                             xQueueSend( LCDControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
                             LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do LCDControl. Comando: ") + String(receivedMessage)).c_str());
+                        } else 
+                        {
+                            if (strstr(receivedMessage, "TEST BUTTON") != nullptr )
+                            {
+                                xQueueSend( buttonControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+                                LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do bUTTONControl. Comando: ") + String(receivedMessage)).c_str());
+                            }
                         }
                     }
                 }
