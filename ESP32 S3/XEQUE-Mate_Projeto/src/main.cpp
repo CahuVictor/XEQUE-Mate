@@ -155,6 +155,61 @@ void startTasks() {
     //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
 }
 
+void command2WifiManager(char* receivedMessage) {
+    if ( WiFiQueue != nullptr)
+    {
+        xQueueSend( WiFiQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WiFiManager. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
+    }
+}
+
+void command2WebServerr(char* receivedMessage) {
+    if ( webserverQueue != nullptr)
+    {
+        xQueueSend( webserverQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue Web Server não inicializado.");
+    }
+}
+
+void command2RFIDControl(char* receivedMessage) {
+    if ( RFIDControlQueue != nullptr)
+    {
+        xQueueSend( RFIDControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do RFIDControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue RFID Control não inicializado.");
+    }
+}
+
+void command2LCDControl(char* receivedMessage) {
+    if ( LCDControlQueue != nullptr)
+    {
+        xQueueSend( LCDControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do LCDControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue LCD Control não inicializado.");
+    }
+}
+                                // Comandos para ButtonControl
+void command2ButtonControl(char* receivedMessage) {
+    if ( buttonControlQueue != nullptr)
+    {
+        xQueueSend( buttonControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do bUTTONControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue Button Control não inicializado.");
+    }
+}
+
 // Função da nova tarefa para imprimir o conteúdo da fila
 void printQueueTask(void* pvParameters) {
     char receivedMessage[64];  // Buffer para armazenar a mensagem da fila
@@ -163,54 +218,47 @@ void printQueueTask(void* pvParameters) {
         // Tenta ler a fila sem bloquear
         if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS)
         {
+            bool msgReceived = false;
             LOG_INFO(&Serial, (String("[Queue Monitor] Mensagem recebida da fila: ") + String(receivedMessage)).c_str());
 
             if (strstr(receivedMessage, "GET IP") != nullptr || 
                 strstr(receivedMessage, "SSID:") != nullptr || 
                 strstr(receivedMessage, "PASSWORD:") != nullptr )
             {
+                msgReceived = true;
                 // Comandos para WiFiManager
-                if ( WiFiQueue != nullptr)
-                {
-                    xQueueSend( WiFiQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                    LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WiFiManager. Comando: ") + String(receivedMessage)).c_str());
-                } else 
-                {
-                    LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
-                }
-            } else 
-            {
-                if (strstr(receivedMessage, "GET PORT") != nullptr || 
-                    strstr(receivedMessage, "GET URL") != nullptr )
-                {
-                    xQueueSend( webserverQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                    LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
-                } else 
-                {
-                    if (strstr(receivedMessage, "READ RFID") != nullptr )
-                    {
-                        xQueueSend( RFIDControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do RFIDControl. Comando: ") + String(receivedMessage)).c_str());
-                    } else 
-                    {
-                        if (strstr(receivedMessage, "SEND LCD:") != nullptr )
-                        {
-                            xQueueSend( LCDControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                            LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do LCDControl. Comando: ") + String(receivedMessage)).c_str());
-                        } else 
-                        {
-                            if (strstr(receivedMessage, "TEST BUTTON") != nullptr )
-                            {
-                                xQueueSend( buttonControlQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                                LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do bUTTONControl. Comando: ") + String(receivedMessage)).c_str());
-                            }
-                        }
-                    }
-                }
+                command2WifiManager(receivedMessage);
             }
-        } else
-        {
-            LOG_INFO(&Serial, "[Queue Monitor] Nenhuma mensagem na fila.");
+            if (strstr(receivedMessage, "GET PORT") != nullptr || 
+                strstr(receivedMessage, "GET URL") != nullptr )
+            {
+                    
+                msgReceived = true;
+                // Comandos para WebServer
+                command2WebServerr(receivedMessage);    
+            }
+            if (strstr(receivedMessage, "READ RFID") != nullptr )
+            {
+                msgReceived = true;
+                // Comandos para RFIDControl
+                command2RFIDControl(receivedMessage);    
+            }
+            if (strstr(receivedMessage, "SEND LCD:") != nullptr )
+            {
+                msgReceived = true;
+                // Comandos para LCDControl
+                command2LCDControl(receivedMessage);
+            }
+            if (strstr(receivedMessage, "TEST BUTTON") != nullptr )
+            {
+                msgReceived = true;
+                // Comandos para ButtonControl
+                command2ButtonControl(receivedMessage);
+            }
+            if (msgReceived == true)
+            {
+                LOG_INFO(&Serial, "[Queue Monitor] Nenhuma mensagem na fila.");
+            }
         }
 
         // Aguarda 10 segundos antes de verificar novamente
