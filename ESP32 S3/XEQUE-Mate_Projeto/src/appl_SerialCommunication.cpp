@@ -78,9 +78,13 @@ void SerialCommunication::monitorTask() {
 }
 
 void SerialCommunication::processCommand(const char* command) {
+    // analisar maiúscula e minúscula
+    // analisar espaçamento
+    // refatorar esta seção pois processCommand nas outras libs trata dados recebidos pela fila
+
     // Verifica se "HELP" está presente em qualquer parte da string
     if (strstr(command, "HELP") != nullptr) {
-        LOG_INFO(serial, "Comandos disponíveis:\nSSID:<nome>\nPASSWORD:<senha>\nHELP\nGET IP\n");
+        LOG_INFO(serial, "Comandos disponíveis:");
         LOG_INFO(serial, "    SSID:<nome>");
         LOG_INFO(serial, "    PASSWORD:<senha>");
         LOG_INFO(serial, "    GET IP");
@@ -89,6 +93,8 @@ void SerialCommunication::processCommand(const char* command) {
         LOG_INFO(serial, "    READ RFID");
         LOG_INFO(serial, "    SEND LCD:<msg>");
         LOG_INFO(serial, "    TEST BUTTON");
+        LOG_INFO(serial, "    WRITE:");
+        LOG_INFO(serial, "    READ");
     } else if ( strstr(command, "GET IP") != nullptr || 
                 strstr(command, "SSID:") != nullptr || 
                 strstr(command, "PASSWORD:") != nullptr || 
@@ -96,7 +102,9 @@ void SerialCommunication::processCommand(const char* command) {
                 strstr(command, "GET URL") != nullptr || 
                 strstr(command, "READ RFID") != nullptr || 
                 strstr(command, "SEND LCD:") != nullptr || 
-                strstr(command, "TEST BUTTON") != nullptr) {
+                strstr(command, "TEST BUTTON") != nullptr || 
+                strstr(command, "WRITE:") != nullptr || 
+                strstr(command, "READ") != nullptr) {
         // Comandos para WiFiManager
         if ( this->SendQueue != nullptr) {
             xQueueSend( this->SendQueue , command, portMAX_DELAY);  // Envia o comando para a Queue de envio

@@ -8,8 +8,8 @@
 #include "appl_SerialCommunication.h"
 #include "appl_WiFiManager.h"
 #include "appl_WebServerControl.h"
-    /*#include "I2CCommunication.h"
-    #include "PowerMonitor.h"
+#include "appl_I2CCommunication.h"
+    /*#include "PowerMonitor.h"
     #include "SupervisorTask.h"
     #include "StateMachine.h"*/
 
@@ -22,8 +22,8 @@ LCDControl lcdControl;
 SerialCommunication serialComm(&Serial);  // Passa a interface Serial como parâmetro
 WiFiManager wifiManager;
 WebServerControl webServer(8080);  // Porta 80 para o servidor web
-    /*I2CCommunication i2cComm;
-    PowerMonitor powerMonitor;
+I2CCommunication i2cComm;
+    /*PowerMonitor powerMonitor;
     SupervisorTask supervisor;
     StateMachine stateMachine;*/
 
@@ -36,6 +36,7 @@ QueueHandle_t RFIDControlQueue;                         // Queue onde o módulo 
 QueueHandle_t LedControlQueue;                          // Queue onde o módulo LedControl recebe os dados
 QueueHandle_t LCDControlQueue;                          // Queue onde o módulo LCDControl recebe os dados
 QueueHandle_t buttonControlQueue;                       // Queue onde o módulo ButtonControl recebe os dados
+QueueHandle_t i2cQueue;                                 // Queue onde o módulo I2CCommunication recebe os dados
 const int QueueElementSize = 10;
 
 // Função da nova tarefa para imprimir o conteúdo da fila
@@ -91,9 +92,14 @@ void loop()
 {
     // O loop principal não será usado, pois as tarefas são gerenciadas pelo FreeRTOS
     // Exemplo de log periódico
-    LOG_INFO(&Serial, "Loop principal em execução.");
+    static unsigned long timeLogAlive = 0;
+    if (millis() - timeLogAlive > 60000)
+    {
+        LOG_INFO(&Serial, "Loop principal em execução.");
+        timeLogAlive = millis();
+    }
 
-    delay(10000);
+    delay(15000);
 }
 
 void CreateQueues() {
@@ -107,6 +113,7 @@ void CreateQueues() {
     LedControlQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
     LCDControlQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
     buttonControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    i2cQueue           = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
 
     // Check if the queue was successfully created
     if (queue == NULL) {
@@ -126,6 +133,7 @@ void setModulesQueue() {
     rfidControl.setQueue(queue, RFIDControlQueue);
     buttonControl.setQueue(queue, buttonControlQueue);
     lcdControl.setQueue(queue, LCDControlQueue);
+    i2cComm.setQueue(queue, i2cQueue);
 }
 
 void initializeTasks() {
@@ -136,8 +144,8 @@ void initializeTasks() {
     serialComm.initialize();
     wifiManager.initialize();
     webServer.initialize();
-        /*i2cComm.initialize();
-        powerMonitor.initialize();
+    i2cComm.initialize();
+        /*powerMonitor.initialize();
         supervisor.initialize();
         stateMachine.initialize();*/
 }
@@ -150,63 +158,22 @@ void startTasks() {
     lcdControl.startTask();
     buttonControl.startTask();
     webServer.startTask();                  //  http://<IP_DO_ESP>/     http://<IP_DO_ESP>/status
+    i2cComm.startTask();
     /*xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
     xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
     //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
 }
 
-void command2WifiManager(char* receivedMessage) {
-    if ( WiFiQueue != nullptr)
+void command2Task(char* receivedMessage, QueueHandle_t QueueSend, String taskName) {
+    if ( QueueSend != nullptr)
     {
-        xQueueSend( WiFiQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WiFiManager. Comando: ") + String(receivedMessage)).c_str());
+        xQueueSend( QueueSend , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do ") + 
+                           taskName + String(". Comando: ") + 
+                           String(receivedMessage)).c_str());
     } else 
     {
-        LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
-    }
-}
-
-void command2WebServerr(char* receivedMessage) {
-    if ( webserverQueue != nullptr)
-    {
-        xQueueSend( webserverQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
-    } else 
-    {
-        LOG_INFO(&Serial, "[Queue Monitor] Queue Web Server não inicializado.");
-    }
-}
-
-void command2RFIDControl(char* receivedMessage) {
-    if ( RFIDControlQueue != nullptr)
-    {
-        xQueueSend( RFIDControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do RFIDControl. Comando: ") + String(receivedMessage)).c_str());
-    } else 
-    {
-        LOG_INFO(&Serial, "[Queue Monitor] Queue RFID Control não inicializado.");
-    }
-}
-
-void command2LCDControl(char* receivedMessage) {
-    if ( LCDControlQueue != nullptr)
-    {
-        xQueueSend( LCDControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do LCDControl. Comando: ") + String(receivedMessage)).c_str());
-    } else 
-    {
-        LOG_INFO(&Serial, "[Queue Monitor] Queue LCD Control não inicializado.");
-    }
-}
-                                // Comandos para ButtonControl
-void command2ButtonControl(char* receivedMessage) {
-    if ( buttonControlQueue != nullptr)
-    {
-        xQueueSend( buttonControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do bUTTONControl. Comando: ") + String(receivedMessage)).c_str());
-    } else 
-    {
-        LOG_INFO(&Serial, "[Queue Monitor] Queue Button Control não inicializado.");
+        LOG_INFO(&Serial, (String("[Queue Monitor] Queue ") + taskName + String(" não inicializado.")).c_str());
     }
 }
 
@@ -226,34 +193,36 @@ void printQueueTask(void* pvParameters) {
                 strstr(receivedMessage, "PASSWORD:") != nullptr )
             {
                 msgReceived = true;
-                // Comandos para WiFiManager
-                command2WifiManager(receivedMessage);
+                command2Task(receivedMessage, WiFiQueue, "WiFi Manager");
             }
             if (strstr(receivedMessage, "GET PORT") != nullptr || 
                 strstr(receivedMessage, "GET URL") != nullptr )
             {
                     
                 msgReceived = true;
-                // Comandos para WebServer
-                command2WebServerr(receivedMessage);    
+                command2Task(receivedMessage, webserverQueue, "Web Server Control");
             }
             if (strstr(receivedMessage, "READ RFID") != nullptr )
             {
                 msgReceived = true;
-                // Comandos para RFIDControl
-                command2RFIDControl(receivedMessage);    
+                command2Task(receivedMessage, RFIDControlQueue, "RFID Control");
             }
             if (strstr(receivedMessage, "SEND LCD:") != nullptr )
             {
                 msgReceived = true;
-                // Comandos para LCDControl
-                command2LCDControl(receivedMessage);
+                command2Task(receivedMessage, LCDControlQueue, "LCD Control");
             }
             if (strstr(receivedMessage, "TEST BUTTON") != nullptr )
             {
                 msgReceived = true;
-                // Comandos para ButtonControl
-                command2ButtonControl(receivedMessage);
+                command2Task(receivedMessage, buttonControlQueue, "Button Control");
+            }
+            if (strstr(receivedMessage, "WRITE:") != nullptr || 
+                strstr(receivedMessage, "READ") != nullptr )
+            {
+                    
+                msgReceived = true;
+                command2Task(receivedMessage, i2cQueue, "I2C Communication");
             }
             if (msgReceived == true)
             {

@@ -9,6 +9,7 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "regex": "cpp",
-        "numbers": "cpp"
+        "numbers": "cpp",
+        "cstring": "cpp"
     }
 }
