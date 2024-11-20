@@ -23,8 +23,8 @@ void SerialCommunication::startTask() {
 }
 
 void SerialCommunication::serialReceiveTask() {
-    char commandBuffer[64];
-    int commandIndex = 0;
+    static char commandBuffer[64];
+    static int commandIndex = 0;
     
     for (;;) {
         if (serial->available() > 0) {
@@ -36,6 +36,8 @@ void SerialCommunication::serialReceiveTask() {
             {
                 commandBuffer[commandIndex] = receivedChar;
                 commandIndex++;
+                commandBuffer[commandIndex] = '\0';
+                Serial.println(commandBuffer);
             } else {
                 // Finaliza o comando com um terminador nulo e chama `processCommand`
                 commandBuffer[commandIndex] = '\0';
@@ -48,8 +50,8 @@ void SerialCommunication::serialReceiveTask() {
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
-
-/*void SerialCommunication::writeToBuffer(char c) {
+/*
+void SerialCommunication::writeToBuffer(char c) {
     rxBuffer[writeIndex] = c;
     writeIndex = (writeIndex + 1) % BUFFER_SIZE;
 
@@ -63,8 +65,8 @@ void SerialCommunication::serialReceiveTask() {
         readIndex = (readIndex + 1) % BUFFER_SIZE;
         LOG_WARNING(serial, "serialCommunication: Buffer circular cheio. Sobrescrevendo dados antigos.");
     }
-}
-
+}*/
+/*
 int SerialCommunication::readFromBuffer(char* buffer, size_t length) {
     int bytesRead = 0;
     while (bytesRead < length && readIndex != writeIndex) {
@@ -81,7 +83,13 @@ void SerialCommunication::processCommand(const char* command) {
         LOG_INFO(serial, "    SSID:<nome>");
         LOG_INFO(serial, "    PASSWORD:<senha>");
         LOG_INFO(serial, "    GET IP");
-    } else if (strstr(command, "GET IP") != nullptr || strstr(command, "SSID:") != nullptr || strstr(command, "PASSWORD:") != nullptr) {
+        LOG_INFO(serial, "    GET PORT");
+        LOG_INFO(serial, "    GET URL");
+    } else if ( strstr(command, "GET IP") != nullptr || 
+                strstr(command, "SSID:") != nullptr || 
+                strstr(command, "PASSWORD:") != nullptr || 
+                strstr(command, "GET PORT") != nullptr  || 
+                strstr(command, "GET URL") != nullptr ) {
         // Comandos para WiFiManager
         if ( this->SendQueue != nullptr) {
             xQueueSend( this->SendQueue , command, portMAX_DELAY);  // Envia o comando para a Queue de envio

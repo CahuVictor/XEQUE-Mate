@@ -97,14 +97,14 @@ void WiFiManager::monitorWiFiTask() {
             startAPMode();
         }
         
-        processReceiveCommand();  // Processa comandos recebidos
+        processCommand();  // Processa comandos recebidos
 
         dnsServer.processNextRequest();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-void WiFiManager::processReceiveCommand() {
+void WiFiManager::processCommand() {
     //static String lastCommand = "";
     //LOG_DEBUG(&Serial, "WiFiManager: Verificando ReceiveQueue...");
 
@@ -141,7 +141,7 @@ void WiFiManager::processReceiveCommand() {
         }*/
 
     } else {
-        LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue == nullptr"));
+        //LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue == nullptr"));
     }
 }
 
