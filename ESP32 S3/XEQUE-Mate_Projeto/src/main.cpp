@@ -3,7 +3,7 @@
 #include "appl_MyLogger.h"
 #include "appl_LedControl.h"
 #include "appl_RFIDControl.h"
-    //#include "ButtonControl.h"
+#include "appl_ButtonControl.h"
 #include "appl_LCDControl.h"
 #include "appl_SerialCommunication.h"
 #include "appl_WiFiManager.h"
@@ -16,7 +16,8 @@
 // Instâncias globais das classes
 LedControl ledControl;
 RFIDControl rfidControl;
-    //ButtonControl buttonControl;
+uint8_t buttonPins[] = {2, 4, 6, 8};  // Define os pinos dos 4 botões
+ButtonControl buttonControl( buttonPins );  // Define os pinos dos 4 botões (ajuste conforme sua configuração de hardware)
 LCDControl lcdControl;
 SerialCommunication serialComm(&Serial);  // Passa a interface Serial como parâmetro
 WiFiManager wifiManager;
@@ -27,14 +28,26 @@ WebServerControl webServer(8080);  // Porta 80 para o servidor web
     StateMachine stateMachine;*/
 
 // Queue FreeRtos
-QueueHandle_t queue;                        // Queue onde todos os módulos podem escrever
-QueueHandle_t WiFiQueue;                    // Queue onde apenas o módulo WiFi ler
-QueueHandle_t SerialQueue;                    // Queue onde apenas o módulo WiFi ler
-QueueHandle_t webserverQueue;
+QueueHandle_t queue;                                    // Queue onde todos os módulos podem escrever
+QueueHandle_t WiFiQueue;                                // Queue onde o módulo WiFi recebe os dados
+QueueHandle_t SerialQueue;                              // Queue onde o módulo Serial recebe os dados
+QueueHandle_t webserverQueue;                           // Queue onde o módulo WebServer recebe os dados
+QueueHandle_t RFIDControlQueue;                         // Queue onde o módulo RFIDControl recebe os dados
+QueueHandle_t LedControlQueue;                          // Queue onde o módulo LedControl recebe os dados
+QueueHandle_t LCDControlQueue;                          // Queue onde o módulo LCDControl recebe os dados
+QueueHandle_t buttonControlQueue;                       // Queue onde o módulo ButtonControl recebe os dados
 const int QueueElementSize = 10;
 
 // Função da nova tarefa para imprimir o conteúdo da fila
 void printQueueTask(void* pvParameters);
+
+void CreateQueues();
+
+void setModulesQueue();
+
+void initializeTasks();
+
+void startTasks();
 
 void setup() {
     // Inicialização da comunicação serial
@@ -44,55 +57,17 @@ void setup() {
     MyLogger::initialize();  // Inicializa o logger com proteção de mutex se FreeRTOS estiver disponível
     LOG_INFO(&Serial, "Sistema inicializado com sucesso.");
 
-    // Inicializa e configura a fila
-    queue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);        // Create the queue which will have <QueueElementSize>
-                                                                                            // number of elements, each of size `message_t` and 
-                                                                                            // pass the address to <QueueHandle>.
-    WiFiQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
-    SerialQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
-    webserverQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    // Cria filas
+    CreateQueues();
 
-    // Check if the queue was successfully created
-    if (queue == NULL) {
-        LOG_INFO(&Serial, "Queue could not be created. Halt.");
-        while (1)
-        {
-            delay(1000);  // Halt at this point as is not possible to continue
-        }
-    }
-
-    // Set queue to module
-    serialComm.setQueue(queue, SerialQueue);
-    wifiManager.setQueue(queue, WiFiQueue);
-    webServer.setQueue(queue, webserverQueue);
+    // Define as filas nos módulos
+    setModulesQueue();
 
     // Inicialização dos módulos
-    ledControl.initialize();
-    rfidControl.initialize();
-        //buttonControl.initialize();
-    lcdControl.initialize();
-    serialComm.initialize();
-    wifiManager.initialize();
+    initializeTasks();
 
     // Inicia as tarefas
-    serialComm.startTask();
-    wifiManager.startTask();
-    webServer.initialize();
-        /*i2cComm.initialize();
-        powerMonitor.initialize();
-        supervisor.initialize();
-        stateMachine.initialize();*/
-
-    // Inicia tarefas FreeRTOS para cada módulo (exemplo)
-    wifiManager.startTask();            //  http://http://192.168.4.1/
-    serialComm.startTask();
-    ledControl.startTask();
-    rfidControl.startTask();
-    /*xTaskCreate([](void*) { buttonControl.readButtons(); }, "Button Task", 2048, NULL, 1, NULL);
-    xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
-    xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
-    webServer.startTask();                  //  http://<IP_DO_ESP>/     http://<IP_DO_ESP>/status
-    //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
+    startTasks();
 
     // Configurações de teste
     
@@ -121,38 +96,169 @@ void loop()
     delay(10000);
 }
 
+void CreateQueues() {
+    queue =             xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);  // Create the queue which will have <QueueElementSize>
+                                                                                            // number of elements, each of size `message_t` and 
+                                                                                            // pass the address to <QueueHandle>.
+    WiFiQueue =          xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    SerialQueue =        xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    webserverQueue =     xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+    RFIDControlQueue =   xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LedControlQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    LCDControlQueue =    xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE); 
+    buttonControlQueue = xQueueCreate(QueueElementSize, sizeof(char) * QUEUE_MESSAGE_SIZE);
+
+    // Check if the queue was successfully created
+    if (queue == NULL) {
+        LOG_INFO(&Serial, "Queue could not be created. Halt.");
+        while (1)
+        {
+            delay(1000);  // Halt at this point as is not possible to continue
+        }
+    }
+}
+
+void setModulesQueue() {
+    serialComm.setQueue(queue, SerialQueue);
+    wifiManager.setQueue(queue, WiFiQueue);
+    webServer.setQueue(queue, webserverQueue);
+    ledControl.setQueue(queue, LedControlQueue);
+    rfidControl.setQueue(queue, RFIDControlQueue);
+    buttonControl.setQueue(queue, buttonControlQueue);
+    lcdControl.setQueue(queue, LCDControlQueue);
+}
+
+void initializeTasks() {
+    ledControl.initialize();
+    rfidControl.initialize();
+    buttonControl.initialize();
+    lcdControl.initialize();
+    serialComm.initialize();
+    wifiManager.initialize();
+    webServer.initialize();
+        /*i2cComm.initialize();
+        powerMonitor.initialize();
+        supervisor.initialize();
+        stateMachine.initialize();*/
+}
+
+void startTasks() {
+    serialComm.startTask();
+    wifiManager.startTask();            //  http://http://192.168.4.1/
+    ledControl.startTask();
+    rfidControl.startTask();
+    lcdControl.startTask();
+    buttonControl.startTask();
+    webServer.startTask();                  //  http://<IP_DO_ESP>/     http://<IP_DO_ESP>/status
+    /*xTaskCreate([](void*) { powerMonitor.logConsumption(); }, "Power Monitor Task", 2048, NULL, 1, NULL);
+    xTaskCreate([](void*) { supervisor.monitorTasks(); }, "Supervisor Task", 2048, NULL, 1, NULL);*/
+    //xTaskCreate([](void*) { stateMachine.updateState(0); }, "State Machine Task", 2048, NULL, 1, NULL);*
+}
+
+void command2WifiManager(char* receivedMessage) {
+    if ( WiFiQueue != nullptr)
+    {
+        xQueueSend( WiFiQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WiFiManager. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
+    }
+}
+
+void command2WebServerr(char* receivedMessage) {
+    if ( webserverQueue != nullptr)
+    {
+        xQueueSend( webserverQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue Web Server não inicializado.");
+    }
+}
+
+void command2RFIDControl(char* receivedMessage) {
+    if ( RFIDControlQueue != nullptr)
+    {
+        xQueueSend( RFIDControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do RFIDControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue RFID Control não inicializado.");
+    }
+}
+
+void command2LCDControl(char* receivedMessage) {
+    if ( LCDControlQueue != nullptr)
+    {
+        xQueueSend( LCDControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do LCDControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue LCD Control não inicializado.");
+    }
+}
+                                // Comandos para ButtonControl
+void command2ButtonControl(char* receivedMessage) {
+    if ( buttonControlQueue != nullptr)
+    {
+        xQueueSend( buttonControlQueue , receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
+        LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do bUTTONControl. Comando: ") + String(receivedMessage)).c_str());
+    } else 
+    {
+        LOG_INFO(&Serial, "[Queue Monitor] Queue Button Control não inicializado.");
+    }
+}
+
 // Função da nova tarefa para imprimir o conteúdo da fila
 void printQueueTask(void* pvParameters) {
     char receivedMessage[64];  // Buffer para armazenar a mensagem da fila
-    for (;;) {
+    for (;;)
+    {
         // Tenta ler a fila sem bloquear
-        if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS) {
+        if (xQueueReceive(queue, &receivedMessage, pdMS_TO_TICKS(100)) == pdPASS)
+        {
+            bool msgReceived = false;
             LOG_INFO(&Serial, (String("[Queue Monitor] Mensagem recebida da fila: ") + String(receivedMessage)).c_str());
 
             if (strstr(receivedMessage, "GET IP") != nullptr || 
                 strstr(receivedMessage, "SSID:") != nullptr || 
                 strstr(receivedMessage, "PASSWORD:") != nullptr )
             {
+                msgReceived = true;
                 // Comandos para WiFiManager
-                if ( WiFiQueue != nullptr)
-                {
-                    xQueueSend( WiFiQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                    LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WiFiManager. Comando: ") + String(receivedMessage)).c_str());
-                } else 
-                {
-                    LOG_INFO(&Serial, "[Queue Monitor] Queue WiFi Manager não inicializado.");
-                }
-            } else 
-            {
-                if (strstr(receivedMessage, "GET PORT") != nullptr || 
-                    strstr(receivedMessage, "GET URL") != nullptr )
-                {
-                    xQueueSend( webserverQueue , &receivedMessage, portMAX_DELAY);  // Envia o comando para a Queue de envio
-                    LOG_INFO(&Serial, (String("[Queue Monitor] Comando enviado para a fila do WebServerControl. Comando: ") + String(receivedMessage)).c_str());
-                }
+                command2WifiManager(receivedMessage);
             }
-        } else {
-            LOG_INFO(&Serial, "[Queue Monitor] Nenhuma mensagem na fila.");
+            if (strstr(receivedMessage, "GET PORT") != nullptr || 
+                strstr(receivedMessage, "GET URL") != nullptr )
+            {
+                    
+                msgReceived = true;
+                // Comandos para WebServer
+                command2WebServerr(receivedMessage);    
+            }
+            if (strstr(receivedMessage, "READ RFID") != nullptr )
+            {
+                msgReceived = true;
+                // Comandos para RFIDControl
+                command2RFIDControl(receivedMessage);    
+            }
+            if (strstr(receivedMessage, "SEND LCD:") != nullptr )
+            {
+                msgReceived = true;
+                // Comandos para LCDControl
+                command2LCDControl(receivedMessage);
+            }
+            if (strstr(receivedMessage, "TEST BUTTON") != nullptr )
+            {
+                msgReceived = true;
+                // Comandos para ButtonControl
+                command2ButtonControl(receivedMessage);
+            }
+            if (msgReceived == true)
+            {
+                LOG_INFO(&Serial, "[Queue Monitor] Nenhuma mensagem na fila.");
+            }
         }
 
         // Aguarda 10 segundos antes de verificar novamente

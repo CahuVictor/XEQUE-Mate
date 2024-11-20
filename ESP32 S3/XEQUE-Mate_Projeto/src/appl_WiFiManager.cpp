@@ -1,5 +1,7 @@
 #include "appl_WiFiManager.h"
 
+const char text_wifimanager[] =  "WiFiManager::";
+
 WiFiManager::WiFiManager() 
     : server(CAPTIVE_PORTAL_PORT), apModeActive(false), /*wifiSemaphore(nullptr),*/ SendQueue(nullptr), ReceiveQueue(nullptr) {}
 
@@ -8,28 +10,15 @@ void WiFiManager::initialize() {
     connectToWiFi();
 }
 
-void WiFiManager::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
-    this->SendQueue = SendQueue;
-    this->ReceiveQueue = ReceiveQueue;
-}
-
-void WiFiManager::startTask() {
-    xTaskCreate(taskWrapper, "WiFi Task",                                   // A name just for humans
-                4096,                                                       // The stack size can be checked by calling `uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);`
-                this,                                                       // 
-                1,                                                          // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-                NULL/*&wifiTaskHandle*/);                                           // Salva o handle da tarefa
-}
-
 void WiFiManager::connectToWiFi() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    LOG_INFO(&Serial, "WiFiManager: Tentando conectar ao WiFi...");
+    LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Tentando conectar ao WiFi...")).c_str());
 
     if (WiFi.waitForConnectResult() == WL_CONNECTED) {
         printIPAddress(); // Imprime o IP após conexão //LOG_INFO(&Serial, (String("Conectado ao WiFi. IP: ") + WiFi.localIP().toString()).c_str());
     } else {
-        LOG_ERROR(&Serial, "WiFiManager: Falha na conexão com o WiFi.");
+        LOG_ERROR(&Serial, (String(text_wifimanager) + String("Falha na conexão com o WiFi.")).c_str());
         startAPMode();
     }
 }
@@ -41,7 +30,7 @@ void WiFiManager::startAPMode() {
 
     setupCaptivePortal();
 
-    LOG_INFO(&Serial, "WiFiManager: Modo AP ativado. Conecte-se ao ponto de acesso para configurar o WiFi.");
+    LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Modo AP ativado. Conecte-se ao ponto de acesso para configurar o WiFi.")).c_str());
     apModeActive = true;
 
     printIPAddress(); // Imprime o IP no modo AP //LOG_INFO(&Serial, (String("Modo AP criado. IP: ") + WiFi.softAPIP().toString()).c_str());
@@ -74,26 +63,49 @@ void WiFiManager::handleWiFiConfig(AsyncWebServerRequest *request) {
         String password = request->getParam("password", true)->value();
 
         WiFi.begin(ssid.c_str(), password.c_str());
-        Serial.printf("WiFiManager: Conectando a SSID: %s\n", ssid.c_str());
-
+        LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Conectando a SSID: ") + ssid).c_str());
+        
         if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-            LOG_INFO(&Serial, "WiFiManager: Conectado com sucesso!");
+            LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Conectado com sucesso!")).c_str());
             apModeActive = false;
             dnsServer.stop();
             server.end();
 
             printIPAddress(); // Imprime o IP após configuração
         } else {
-            LOG_INFO(&Serial, "WiFiManager: Falha na conexão. Tente novamente.");
+            LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Falha na conexão. Tente novamente.")).c_str());
         }
     }
     request->send(200, "text/html", "Configuração recebida! Tentando conectar...");
 }
 
-void WiFiManager::monitorWiFiTask() {
+void WiFiManager::printIPAddress() {
+    if (WiFi.status() == WL_CONNECTED) {
+        LOG_DEBUG(&Serial, (String(text_wifimanager) + String("WiFiManager: IP conectado: ") + WiFi.localIP().toString() ).c_str());
+    } else if (WiFi.getMode() == WIFI_AP) {
+        LOG_DEBUG(&Serial, (String(text_wifimanager) + String("WiFiManager: IP modo AP: ") + WiFi.softAPIP().toString()).c_str());
+    } else {
+        LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Nenhuma conexão WiFi ativa.")).c_str());
+    }
+}
+
+void WiFiManager::setQueue(QueueHandle_t SendQueue, QueueHandle_t ReceiveQueue) {
+    this->SendQueue = SendQueue;
+    this->ReceiveQueue = ReceiveQueue;
+}
+
+void WiFiManager::startTask() {
+    xTaskCreate(taskWrapper, "WiFi Task",                                   // A name just for humans
+                4096,                                                       // The stack size can be checked by calling `uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);`
+                this,                                                       // 
+                1,                                                          // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+                NULL/*&wifiTaskHandle*/);                                           // Salva o handle da tarefa
+}
+
+void WiFiManager::monitorTask() {
     for (;;) {
         if (WiFi.status() != WL_CONNECTED && !apModeActive) {
-            LOG_INFO(&Serial, "WiFiManager: WiFi desconectado. Ativando modo AP...");
+            LOG_DEBUG(&Serial, (String(text_wifimanager) + String("WiFi desconectado. Ativando modo AP...")).c_str());
             startAPMode();
         }
         
@@ -113,19 +125,19 @@ void WiFiManager::processCommand() {
         char command[QUEUE_MESSAGE_SIZE];
         if (xQueueReceive((this->ReceiveQueue), &command, pdMS_TO_TICKS(100))== pdPASS)
         {
-            LOG_DEBUG(&Serial, (String("WiFiManager: Comando recebido: ") + String(command)).c_str());
+            LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Comando recebido: ") + String(command)).c_str());
             if (strncmp(command, "SSID:", 5) == 0)
             {
                 // Tratamento do comando SSID
                 String ssid = String(command + 5);
-                LOG_INFO(&Serial, (String("WiFiManager: Recebido SSID via ReceiveQueue: ") + ssid).c_str());
+                LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Recebido SSID via ReceiveQueue: ") + ssid).c_str());
                 WiFi.begin(ssid.c_str(), WiFi.psk().c_str());
 
             } else if (strncmp(command, "PASSWORD:", 9) == 0)
             {
                 // Tratamento do comando PASSWORD
                 String password = String(command + 9);
-                LOG_INFO(&Serial, "WiFiManager: Senha WiFi recebida via ReceiveQueue.");
+                LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Senha WiFi recebida via ReceiveQueue.")).c_str());
                 WiFi.begin(WiFi.SSID().c_str(), password.c_str());
 
             } else if (strncmp(command, "GET IP", 6) == 0)
@@ -133,7 +145,7 @@ void WiFiManager::processCommand() {
                 printIPAddress();
             } else
             {
-                LOG_DEBUG(&Serial, "WiFiManager: Comando recebido desconhecido.");
+                LOG_DEBUG(&Serial, (String(text_wifimanager) + String("Comando recebido desconhecido.")).c_str());
             }
         } /*else
         {
@@ -142,15 +154,5 @@ void WiFiManager::processCommand() {
 
     } else {
         //LOG_DEBUG(&Serial, ("WiFiManager: ReceiveQueue == nullptr"));
-    }
-}
-
-void WiFiManager::printIPAddress() {
-    if (WiFi.status() == WL_CONNECTED) {
-        LOG_INFO(&Serial, (String("WiFiManager: IP conectado: ") + WiFi.localIP().toString()).c_str());
-    } else if (WiFi.getMode() == WIFI_AP) {
-        LOG_INFO(&Serial, (String("WiFiManager: IP modo AP: ") + WiFi.softAPIP().toString()).c_str());
-    } else {
-        LOG_WARNING(&Serial, "WiFiManager: Nenhuma conexão WiFi ativa.");
     }
 }
