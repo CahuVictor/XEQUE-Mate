@@ -28,8 +28,8 @@ partida = Partida()
 def configurar():
     """Configura as variáveis de quem vai controlar as brancas e as pretas."""
     configurar_json = request.json
-    brancas = configurar_json.get("brancas")
-    pretas = configurar_json.get("pretas")
+    brancas = int(configurar_json.get("brancas"))
+    pretas = int(configurar_json.get("pretas"))
     
     # Configura as variáveis no objeto da partida
     partida.configurar(brancas, pretas)

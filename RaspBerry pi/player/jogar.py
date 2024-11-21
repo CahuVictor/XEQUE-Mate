@@ -13,6 +13,7 @@ def jogar(fen, board, jogador, controlar_brancas, controlar_pretas):
     print(board)
     
     if not board.is_game_over():
+        print('jogador =', jogador)
         if jogador == 1:
             print(controlar_brancas)
             if controlar_brancas == 1:
@@ -28,7 +29,7 @@ def jogar(fen, board, jogador, controlar_brancas, controlar_pretas):
                 jogada = realizar_jogada_engine(board.fen())
             elif controlar_pretas == 2:
                 jogada = realizar_jogada_aleatoria(board.fen())
-            elif contolar_pretas == 3: 
+            elif controlar_pretas == 3: 
                 jogada = realizar_jogada_usuario(board.fen())
             board.push(chess.Move.from_uci(jogada))
             jogador = 1
