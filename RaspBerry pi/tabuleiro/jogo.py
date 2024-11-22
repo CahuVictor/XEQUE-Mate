@@ -36,16 +36,9 @@ def controlar_jogadas():
     except requests.RequestException as e:
         print(f"Erro de comunicação com o Player: {e}")
 
-def iniciar_jogo():
-    
-    if not game_running:
-        game_running = True
-        thread = threading.Thread(target=jogar_partida)
-        thread.start()
-        print("Jogo iniciado!")
-
 def jogar_partida():
     
+    global game_running, game_paused, jogador_atual
     while game_running:
         if not game_paused:
             if board.is_game_over():
@@ -71,15 +64,78 @@ def jogar_partida():
             except requests.RequestException as e:
                 print(f"Erro ao comunicar com {jogador_atual}: {e}")
 
-            time.sleep(2) 
+            time.sleep(2)  # Atraso entre as jogadas para simular o ritmo do jogo 
         else:
-            time.sleep(1)
+            time.sleep(1)  # Pausa o loop enquanto o jogo estiver pausado
+            time.sleep(2)  # Atraso entre as jogadas para simular o ritmo do jogo
+
+def iniciar_jogo():
+    
+    global game_running
+    if not game_running:
+        game_running = True
+        thread = threading.Thread(target=jogar_partida)
+        thread.start()
+        print("Jogo iniciado!")  
+    else:
+        print("O jogo está em andamento!")              
+
+def exibir_lances():
+    global game_paused
+    game_paused = True  # Pausa o jogo enquanto exibe os lances
+
+    # Lista todos os lances possíveis
+    lances_possiveis = [move.uci() for move in board.legal_moves]
+    print("Lances possíveis:")
+    for i, lance in enumerate(lances_possiveis, 1):
+        print(f"{i}. {lance}", end="  ")
+    print("\n")
+
+    # Opções para o jogador
+    escolha = input("Escolha uma opção:\n1 - Jogada aleatória\n2 - Jogada específica\n3 - Desistir do lance\nDigite sua escolha: ").strip()
+
+    if escolha == '1':  # Jogada aleatória
+        lance_aleatorio = random.choice(lances_possiveis)
+        board.push_uci(lance_aleatorio)
+        print(f"Jogada aleatória executada: {lance_aleatorio}")
+        mostrar_tabuleiro(board)
+
+    elif escolha == '2':  # Jogada específica
+        lance_especifico = input("Digite a jogada específica (exemplo: e2e4): ").strip().lower()
+        try:
+            # Cria o movimento a partir do input do usuário
+            movimento = chess.Move.from_uci(lance_especifico)
+            if movimento in board.legal_moves:
+                board.push(movimento)  # Executa o movimento no tabuleiro
+                print(f"Jogada específica executada: {lance_especifico}")
+                mostrar_tabuleiro(board)
+            else:
+                print("Jogada inválida! A jogada não é permitida no estado atual do tabuleiro.")
+        except ValueError:
+            print("Formato de jogada inválido! Por favor, digite a jogada no formato UCI (exemplo: e2e4).")
+
+    elif escolha == '3':  # Desistir do lance
+        print("Desistindo do lance. Retornando ao jogo normalmente.")
+    
+    else:
+        print("Opção inválida. Voltando ao jogo sem realizar jogada.")
+
+    # Retoma o jogo
+    game_paused = False      
+
+
+# Função para finalizar o jogo com derrota do jogador atual
+def desistir():
+    global game_running
+    vencedor = "Player 2" if jogador_atual == "Player 1" else "Player 1"
+    game_running = False  # Para o jogo
+    print(f"{jogador_atual} desistiu! Vitória de {vencedor}.")          
 
 def reiniciar_jogo():
     
-    reiniciar_tabuleiro()
-    game_running = False
-    game_paused = False
-    jogador_atual = "Player 1"
-    print("\nO jogo foi reiniciado.")
-    controlar_jogadas()
+    global board, game_running, game_paused, jogador_atual
+    board = chess.Board() # Redefine o tabuleiro para o estado inicial
+    game_running = False # Reseta o status de execução do jogo
+    game_paused = False  # Garante que o jogo não esteja pausado
+    jogador_atual = "Player 1"  # Define o jogador inicial como Player 1
+    print("\nO jogo foi reiniciado.")  

@@ -10,14 +10,18 @@ def comando():
 
 def jogar():
     """Recebe a jogada do Player 1, faz a jogada e envia de volta o novo estado."""
-    fen = requests.json['fen']
-    jogo.board.set_fen(fen)
+    try:
+        data = requests.get_json()  # Use o método correto para pegar o JSON do corpo da requisição
+        fen = data['fen']
+        jogo.board.set_fen(fen)
 
-    if 'jogada' in requests.json:
-        jogada = requests.json['jogada']
-        try:
-            jogo.board.push_uci(jogada)
-            return jsonify({'fen': jogo.board.fen(), 'status': 'jogada realizada'})
-        except ValueError:
-            return jsonify({"status": "Jogada inválida."}), 400
-    return jsonify({"status": "Jogada não fornecida."}), 400
+        if 'jogada' in data:
+            jogada = data['jogada']
+            try:
+                jogo.board.push_uci(jogada)
+                return jsonify({'fen': jogo.board.fen(), 'status': 'jogada realizada'})
+            except ValueError:
+                return jsonify({"status": "Jogada inválida."}), 400
+        return jsonify({"status": "Jogada não fornecida."}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
