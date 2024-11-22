@@ -139,3 +139,4 @@ def reiniciar_jogo():
     game_paused = False  # Garante que o jogo não esteja pausado
     jogador_atual = "Player 1"  # Define o jogador inicial como Player 1
     print("\nO jogo foi reiniciado.")  
+    controlar_jogadas() # Coleta novamente as escolhas dos jogadores
