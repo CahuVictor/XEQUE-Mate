@@ -93,8 +93,8 @@ void SerialCommunication::processCommand(const char* command) {
         LOG_INFO(serial, "    READ RFID");
         LOG_INFO(serial, "    SEND LCD:<msg>");
         LOG_INFO(serial, "    TEST BUTTON");
-        LOG_INFO(serial, "    WRITE:");
-        LOG_INFO(serial, "    READ");
+        LOG_INFO(serial, "    I2C WRITE:");
+        LOG_INFO(serial, "    I2C READ");
     } else if ( strstr(command, "GET IP") != nullptr || 
                 strstr(command, "SSID:") != nullptr || 
                 strstr(command, "PASSWORD:") != nullptr || 
@@ -103,8 +103,8 @@ void SerialCommunication::processCommand(const char* command) {
                 strstr(command, "READ RFID") != nullptr || 
                 strstr(command, "SEND LCD:") != nullptr || 
                 strstr(command, "TEST BUTTON") != nullptr || 
-                strstr(command, "WRITE:") != nullptr || 
-                strstr(command, "READ") != nullptr) {
+                strstr(command, "I2C WRITE:") != nullptr || 
+                strstr(command, "I2C READ") != nullptr) {
         // Comandos para WiFiManager
         if ( this->SendQueue != nullptr) {
             xQueueSend( this->SendQueue , command, portMAX_DELAY);  // Envia o comando para a Queue de envio

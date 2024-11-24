@@ -217,8 +217,8 @@ void printQueueTask(void* pvParameters) {
                 msgReceived = true;
                 command2Task(receivedMessage, buttonControlQueue, "Button Control");
             }
-            if (strstr(receivedMessage, "WRITE:") != nullptr || 
-                strstr(receivedMessage, "READ") != nullptr )
+            if (strstr(receivedMessage, "I2C WRITE:") != nullptr || 
+                strstr(receivedMessage, "I2C READ") != nullptr )
             {
                     
                 msgReceived = true;
