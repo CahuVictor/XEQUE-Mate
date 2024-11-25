@@ -4,6 +4,8 @@
 
 #include <FastLED.h>
 
+// https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
+
 #define NUM_LEDS 5      // Número total de LEDs
 #define DATA_PIN 5        // Pino de dados conectado ao DI dos LEDs
 #define BRIGHTNESS  64    // Brilho máximo (0-255)
