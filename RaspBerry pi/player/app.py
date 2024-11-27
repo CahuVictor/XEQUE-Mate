@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import chess
 from configurar_partida import configurar_partida  # A função configurar_partida, caso você precise
-from jogar import jogar
+from jogar import jogar_ia, jogar_usuario, jogar_aleatorio
 
 app = Flask(__name__)
 
@@ -41,33 +41,46 @@ def configurar():
         "status": "Configuração recebida com sucesso."
     })
 
-@app.route('/jogar', methods=['POST'])
-def jogar_jogo():
-    """Recebe a FEN, inicializa o tabuleiro e faz a jogada."""
-    # Recebe a FEN (estágio do tabuleiro) e as variáveis de controle de brancas e pretas da requisição
+@app.route('/jogarIa', methods=['POST'])
+def jogar_jogada_ia():
     configurar_json = request.json
-    
-    # Obtém as variáveis de controle da partida através da instância global
-    controlar_brancas, controlar_pretas = partida.obter_configuracao()
-
-    # Verifica se as variáveis de controle foram configuradas
-    if controlar_brancas is None or controlar_pretas is None:
-        return jsonify({"error": "As variáveis de controle de brancas e pretas não foram configuradas."}), 400
-
-    jogador = 1
     
     # Recebe a FEN (estágio do tabuleiro) na requisição
     fen = configurar_json['fen']
     board = chess.Board(fen)  # Inicializa o tabuleiro com a FEN recebida
     
     # Chama a função jogar que processa a jogada, passando as variáveis de controle como parâmetros
-    board, jogador = jogar(fen, board, jogador, controlar_brancas, controlar_pretas)
+    board = jogar_ia(fen, board)
     
     # Retorna o estado atualizado do tabuleiro
     return jsonify({
         "status": "Jogada processada.",
         "fen": board.fen()
     })
+
+@app.route('/jogarUsuario', methods=['POST'])
+def jogar_jogada_usuario():
+    configurar_json = request.json
+    fen = configurar_json['fen']
+    board = chess.Board(fen)
+    board = jogar_usuario(fen, board)
+    return jsonify({
+        "status": "Joagada processada",
+        "fen": board.fen()
+    })
+
+@app.rout('/jogarAleatoria', methods=['POST'])
+def jogar_jogada_aleatoria():
+    cofigurar_json = request.json
+    fen = configurar_json['fen']
+    board = chess.Board(fen)
+    board = jogar_aleatorio(fen, board)
+    return jsonify({
+        "status": "Jogada processada",
+        "fen": board.fen()
+    })
+
+
 
 if __name__ == '__main__':
     app.run(port=5001)

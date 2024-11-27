@@ -28,9 +28,9 @@ def controlar_jogadas():
         "pretas": controlar_pretas
     }
     try:
-        response = requests.post("http://localhost:5001/configurar_partida", json=dados_configuracao)
+        response = requests.post("http://localhost:5003/controle_peças", json=dados_configuracao)
         if response.status_code == 200:
-            print("Configuração enviada com sucesso para o Player!")
+            print("Configuração enviada com sucesso para o Controle!")
         else:
             print("Erro ao enviar configuração para o Player.")
     except requests.RequestException as e:
