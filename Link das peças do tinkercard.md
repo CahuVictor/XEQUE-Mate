@@ -4,8 +4,8 @@ Rainha: https://www.tinkercad.com/things/j1HQgicc0n3-spectacular-amur-wolt
 
 Torre: https://www.tinkercad.com/things/iSVU83pNTQM-copy-of-brilliant-maimu-curcan
 
-Bispo: 
+Bispo: https://www.tinkercad.com/things/lBweekLHsys-bispo-padre-sem-cabeca?sharecode=5t88Z7cuQNiITyCxKohzTKeA7jun8YgRgplJOKuSnhw
 
-Peão: 
+Peão: https://www.tinkercad.com/things/cHs5GHyaMU0-peao-crianca-chorando?sharecode=9vBw5wm0I9uo2_i8UjZXhRodGjq6bU8XXKiXgPV2yh0
 
-Cavalo: 
+Cavalo: https://www.tinkercad.com/things/eQC0L94Cnr3-cavalo-chupa-cabra?sharecode=BNH86YgLZ8odMILuOMFg4EJMlfi-trfv-jBqgl2CEks
