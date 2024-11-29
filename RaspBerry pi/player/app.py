@@ -48,7 +48,7 @@ def jogar_jogada_ia():
     # Recebe a FEN (estágio do tabuleiro) na requisição
     fen = configurar_json['fen']
     board = chess.Board(fen)  # Inicializa o tabuleiro com a FEN recebida
-    
+    print(board)
     # Chama a função jogar que processa a jogada, passando as variáveis de controle como parâmetros
     board = jogar_ia(fen, board)
     
@@ -69,9 +69,9 @@ def jogar_jogada_usuario():
         "fen": board.fen()
     })
 
-@app.rout('/jogarAleatoria', methods=['POST'])
+@app.route('/jogarAleatoria', methods=['POST'])
 def jogar_jogada_aleatoria():
-    cofigurar_json = request.json
+    configurar_json = request.json
     fen = configurar_json['fen']
     board = chess.Board(fen)
     board = jogar_aleatorio(fen, board)

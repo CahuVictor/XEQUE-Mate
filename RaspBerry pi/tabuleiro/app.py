@@ -20,11 +20,9 @@ def comando():
 @app.route('/jogar', methods=['POST'])
 def jogar():
     """Recebe a jogada do Player 1, faz a jogada e envia de volta o novo estado."""
-    global jogador_atual
-
+    
     fen = request.json['fen']
     board.set_fen(fen)  # Atualiza o tabuleiro com o FEN recebido
-    print(f"\n{jogador_atual} recebeu o FEN: {fen}")
 
     if debug:
         mostrar_tabuleiro()

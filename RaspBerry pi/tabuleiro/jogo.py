@@ -10,7 +10,7 @@ board = chess.Board()
 game_running = False
 game_paused = False
 jogador_atual = "Player 1"  # Controla qual jogador está jogando (alternando entre Player 1 e Player 2)
-tabuleiro_url_player = "http://localhost:5001/jogar"  # URL do Player
+tabuleiro_url_player = "http://localhost:5003/receber_tabuleiro"  # URL do Player
 
 # Variáveis para controlar quem joga com as brancas e quem joga com as pretas
 controlar_brancas = None

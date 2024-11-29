@@ -2,7 +2,7 @@ import requests
 from flask import jsonify
 import jogo
 
-tabuleiro_url_player = "http://localhost:5001/jogar"
+tabuleiro_url_player = "http://localhost:5003/receber_tabuleiro"
 
 def comando():
     """Recebe comandos do jogador para controlar o jogo."""
