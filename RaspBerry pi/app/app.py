@@ -1,44 +1,10 @@
 from flask import Flask, request, jsonify
 import chess
-from View.jogar import jogar_ia, jogar_usuario, jogar_aleatorio
+from view.view_jogar import jogar_ia, jogar_usuario, jogar_aleatorio
 
 app = Flask(__name__)
 
-# Definindo a classe Partida diretamente no mesmo script
-class Partida:
-    def __init__(self):
-        self.controlar_brancas = None
-        self.controlar_pretas = None
 
-    def configurar(self, brancas, pretas):
-        """Configura quem controla as brancas e quem controla as pretas."""
-        self.controlar_brancas = brancas
-        self.controlar_pretas = pretas
-
-    def obter_configuracao(self):
-        """Retorna as configurações de quem vai controlar as brancas e as pretas."""
-        return self.controlar_brancas, self.controlar_pretas
-
-
-# Instância global da classe Partida
-partida = Partida()
-
-@app.route('/configurar_partida', methods=['POST'])
-def configurar():
-    """Configura as variáveis de quem vai controlar as brancas e as pretas."""
-    configurar_json = request.json
-    brancas = int(configurar_json.get("brancas"))
-    pretas = int(configurar_json.get("pretas"))
-    
-    # Configura as variáveis no objeto da partida
-    partida.configurar(brancas, pretas)
-    
-    # Retorna a configuração como um JSON
-    return jsonify({
-        "controlar_brancas": brancas,
-        "controlar_pretas": pretas,
-        "status": "Configuração recebida com sucesso."
-    })
 
 @app.route('/jogarIa', methods=['POST'])
 def jogar_jogada_ia():
@@ -78,6 +44,7 @@ def jogar_jogada_aleatoria():
         "status": "Jogada processada",
         "fen": board.fen()
     })
+
 
 
 

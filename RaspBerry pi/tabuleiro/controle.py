@@ -1,4 +1,5 @@
 import jogo
+import requests
 
 def comando_iniciar():
     """Inicia o jogo se ele não estiver em andamento."""
@@ -49,6 +50,8 @@ def comando_desistir():
 def comando_reiniciar():
     """Reinicia o jogo se ele não estiver em andamento."""
     if not jogo.game_running:
+        response = requests.post('http://localhost:5003/jogoFinalizado')
+        print(response.json())
         jogo.reiniciar_jogo()
     else:
         print("O jogo ainda está em andamento. Não é possível reiniciar.")

@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from threading import Thread
 import jogo
 import controle
+import requests
 from jogo import board
 
 app = Flask(__name__)
@@ -42,6 +43,7 @@ def jogar():
             return jsonify({"status": "Jogada inválida."}), 400
     else:
         return jsonify({"status": "Jogada não fornecida."}), 400
+
 
 if __name__ == '__main__':
     # Inicia o servidor Flask para o tabuleiro

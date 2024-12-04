@@ -42,6 +42,8 @@ def jogar_partida():
     while game_running:
         if not game_paused:
             if board.is_game_over():
+                response = requests.post('http://localhost:5003/jogoFinalizado')
+                print(response.json())
                 print("O jogo acabou.")
                 resultado = board.result()
                 if resultado == "1-0":

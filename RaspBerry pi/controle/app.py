@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
+import logging
 import chess
-import requests  # Ensure you are using the requests library
+import requests
+import json  # Para manipulação de JSON
+import os
 
 app = Flask(__name__)
 
@@ -8,6 +11,35 @@ player_url_jogada_usuario = "http://localhost:5001/jogarUsuario"
 player_url_jogada_ia = "http://localhost:5001/jogarIa"
 player_url_jogada_aleatoria = "http://localhost:5001/jogarAleatoria"
 tabuleiro_url = "http://localhost:5000/jogar"
+
+# Nome do arquivo de log
+LOG_FILE = 'json_requests.log'
+
+# Configuração do logger para salvar as requisições em um arquivo de log no formato JSON
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Função personalizada para salvar o log em formato JSON
+def json_log_handler(log_data):
+    with open(LOG_FILE, 'a') as log_file:
+        log_file.write(json.dumps(log_data) + "\n")
+
+# Middleware para registrar todas as requisições POST que contenham JSON
+@app.before_request
+def log_request_info():
+    if request.method == 'POST' and request.is_json:
+        # Captura os dados da requisição em formato JSON
+        json_data = request.get_json()
+        
+        # Prepara os dados para salvar no formato JSON
+        log_data = {
+            "method": request.method,
+            "url": request.url,
+            "json_data": json_data
+        }
+        
+        # Registra os dados JSON no arquivo de log
+        json_log_handler(log_data)
 
 class Partida:
     def __init__(self):
@@ -75,5 +107,18 @@ def receber_jogada():
     except requests.RequestException as e:
         print(f"Erro: {e}")
     return jsonify({"status": "Jogada recebida e processada."})
+
+@app.route('/jogoFinalizado', methods=['POST'])
+def jogo_finalizado():
+    if os.path.exists(LOG_FILE):
+        os.remove(LOG_FILE)
+        print(f"Arquivo de log {LOG_FILE} apagado.")
+    
+    # Finaliza o jogo ou zera o estado conforme necessário
+    partida.controlar_brancas = None
+    partida.controlar_pretas = None
+    return jsonify({"status": "Jogo finalizado e arquivo de log apagado."})
+
+
 if __name__ == '__main__':
     app.run(port=5003)
