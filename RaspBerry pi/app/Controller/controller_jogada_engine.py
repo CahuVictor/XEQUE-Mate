@@ -1,5 +1,5 @@
 import chess.engine
-from obter_caminho_engine import obter_caminho_engine
+from setup import obter_caminho_engine
 
 def realizar_jogada_engine(fen):
     """Recebe um FEN do tabuleiro, calcula a melhor jogada e retorna no formato UCI."""

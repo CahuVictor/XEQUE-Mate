@@ -46,51 +46,20 @@ def controle_do_jogo():
     brancas, pretas = partida.obter_configuracao()
     print(board)
     
-    # Replacing `request.post` with `requests.post` and handling exceptions correctly
-    if board.turn == chess.WHITE:
-        if brancas == 1:
-            try:
-                response = requests.post(player_url_jogada_ia, json={'fen': board.fen()})
-                if response.status_code == 200:
-                    print("\nTabuleiro enviado para o player")
-            except requests.RequestException as e:  # Correct exception handling
-                print(f"Erro: {e}")
-        elif brancas == 2:
-            try:
-                response = requests.post(player_url_jogada_aleatoria, json={'fen': board.fen()})
-                if response.status_code == 200:
-                    print("\nTabuleiro enviado para o player")
-            except requests.RequestException as e:
-                print(f"Erro: {e}")
-        elif brancas == 3:
-            try:
-                response = requests.post(player_url_jogada_usuario, json={'fen': board.fen()})
-                if response.status_code == 200:
-                    print("\nTabuleiro enviado para o player")
-            except requests.RequestException as e:
-                print(f"Erro: {e}")
-    elif board.turn == chess.BLACK:
-        if pretas == 1:
-            try:
-                response = requests.post(player_url_jogada_ia, json={'fen': board.fen()})
-                if response.status_code == 200:
-                    print("\nTabuleiro enviado para o player")
-            except requests.RequestException as e:
-                print(f"Erro: {e}")
-        elif pretas == 2:
-            try:
-                response = requests.post(player_url_jogada_aleatoria, json={'fen': board.fen()})
-                if response.status_code == 200:
-                    print("\nTabuleiro enviado para o player")
-            except requests.RequestException as e:
-                print(f"Erro: {e}")
-        elif pretas == 3:
-            try:
-                response = requests.post(player_url_jogada_usuario, json={'fen': board.fen()})
-                if response.status_code == 200:
-                    print("\nTabuleiro enviado para o player")
-            except requests.RequestException as e:
-                print(f"Erro: {e}")
+    jogadas = {
+        1: player_url_jogada_ia,
+        2: player_url_jogada_aleatoria,
+        3: player_url_jogada_usuario
+    }
+    quem_joga = brancas if board.turn == chess.WHITE else pretas
+    url_jogada = jogadas.get(quem_joga)
+    if url_jogada:
+        try:
+            response = requests.post(url_jogada, json={'fen': board.fen()})
+            if response.status_code == 200:
+                print("\nTabuleiro enviado para o player")
+        except requests.RequestException as e:
+            print(f"Erro: {e}")
     return jsonify({"status": "Tabuleiro recebido e processado."})
 
 @app.route('/receber_jogada', methods=['POST'])

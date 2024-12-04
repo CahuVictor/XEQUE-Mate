@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import chess
-from configurar_partida import configurar_partida  # A função configurar_partida, caso você precise
-from jogar import jogar_ia, jogar_usuario, jogar_aleatorio
+from View.jogar import jogar_ia, jogar_usuario, jogar_aleatorio
 
 app = Flask(__name__)
 
