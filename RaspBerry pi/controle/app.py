@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
-import logging
 import chess
 import requests
-import json  # Para manipulação de JSON
+from logger import log_request, log_error, delete_log_file  # Importa funções do módulo de log
 import os
 
 app = Flask(__name__)
@@ -11,35 +10,6 @@ player_url_jogada_usuario = "http://localhost:5001/jogarUsuario"
 player_url_jogada_ia = "http://localhost:5001/jogarIa"
 player_url_jogada_aleatoria = "http://localhost:5001/jogarAleatoria"
 tabuleiro_url = "http://localhost:5000/jogar"
-
-# Nome do arquivo de log
-LOG_FILE = 'json_requests.log'
-
-# Configuração do logger para salvar as requisições em um arquivo de log no formato JSON
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-# Função personalizada para salvar o log em formato JSON
-def json_log_handler(log_data):
-    with open(LOG_FILE, 'a') as log_file:
-        log_file.write(json.dumps(log_data) + "\n")
-
-# Middleware para registrar todas as requisições POST que contenham JSON
-@app.before_request
-def log_request_info():
-    if request.method == 'POST' and request.is_json:
-        # Captura os dados da requisição em formato JSON
-        json_data = request.get_json()
-        
-        # Prepara os dados para salvar no formato JSON
-        log_data = {
-            "method": request.method,
-            "url": request.url,
-            "json_data": json_data
-        }
-        
-        # Registra os dados JSON no arquivo de log
-        json_log_handler(log_data)
 
 class Partida:
     def __init__(self):
@@ -56,6 +26,23 @@ class Partida:
         return self.controlar_brancas, self.controlar_pretas
 
 partida = Partida()
+
+@app.before_request
+def log_request_info():
+    """Middleware para registrar as requisições POST que contenham JSON."""
+    if request.method == 'POST' and request.is_json:
+        log_data = {
+            "method": request.method,
+            "url": request.url,
+            "json_data": request.get_json()
+        }
+        log_request(log_data)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Captura erros não tratados e registra no log."""
+    log_error(e)  # Salva o erro no log
+    return jsonify({"error": str(e)}), 500
 
 @app.route("/controle_peças", methods=['POST'])
 def controle_peças():
@@ -91,7 +78,8 @@ def controle_do_jogo():
             if response.status_code == 200:
                 print("\nTabuleiro enviado para o player")
         except requests.RequestException as e:
-            print(f"Erro: {e}")
+            log_error(e)  # Loga o erro
+            return jsonify({"error": "Erro ao enviar tabuleiro para o player"}), 500
     return jsonify({"status": "Tabuleiro recebido e processado."})
 
 @app.route('/receber_jogada', methods=['POST'])
@@ -105,20 +93,16 @@ def receber_jogada():
         if response.status_code == 200:
             print("\nJogada enviada para o tabuleiro")
     except requests.RequestException as e:
-        print(f"Erro: {e}")
+        log_error(e)  # Loga o erro
+        return jsonify({"error": "Erro ao enviar jogada para o tabuleiro"}), 500
     return jsonify({"status": "Jogada recebida e processada."})
 
 @app.route('/jogoFinalizado', methods=['POST'])
 def jogo_finalizado():
-    if os.path.exists(LOG_FILE):
-        os.remove(LOG_FILE)
-        print(f"Arquivo de log {LOG_FILE} apagado.")
-    
-    # Finaliza o jogo ou zera o estado conforme necessário
+    delete_log_file()  # Usa a função para apagar o log
     partida.controlar_brancas = None
     partida.controlar_pretas = None
     return jsonify({"status": "Jogo finalizado e arquivo de log apagado."})
-
 
 if __name__ == '__main__':
     app.run(port=5003)

@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import chess
-from view.view_jogar import jogar_ia, jogar_usuario, jogar_aleatorio
+from View.view_jogar import jogar_ia, jogar_usuario, jogar_aleatorio
+from Controller.controller_feedback import calcular_score
 
 app = Flask(__name__)
 
@@ -16,6 +17,7 @@ def jogar_jogada_ia():
     print(board)
     # Chama a função jogar que processa a jogada, passando as variáveis de controle como parâmetros
     board = jogar_ia(fen, board)
+    feedback = calcular_feedback(fen, board.fen())
     
     # Retorna o estado atualizado do tabuleiro
     return jsonify({
@@ -29,6 +31,8 @@ def jogar_jogada_usuario():
     fen = configurar_json['fen']
     board = chess.Board(fen)
     board = jogar_usuario(fen, board)
+    score = calcular_score(fen, board.fen())
+    print(score)
     return jsonify({
         "status": "Joagada processada",
         "fen": board.fen()
@@ -40,6 +44,7 @@ def jogar_jogada_aleatoria():
     fen = configurar_json['fen']
     board = chess.Board(fen)
     board = jogar_aleatorio(fen, board)
+    feedback = calcular_feedback(fen, board.fen())
     return jsonify({
         "status": "Jogada processada",
         "fen": board.fen()

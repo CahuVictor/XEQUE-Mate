@@ -1,7 +1,7 @@
 import requests
-from controller.controller_jogada_aleatoria import realizar_jogada_aleatoria
-from controller.controller_jogada_engine import realizar_jogada_engine
-from controller.controller_jogada_usuario import realizar_jogada_usuario
+from Controller.controller_jogada_aleatoria import realizar_jogada_aleatoria
+from Controller.controller_jogada_engine import realizar_jogada_engine
+from Controller.controller_jogada_usuario import realizar_jogada_usuario
 import chess
 
 

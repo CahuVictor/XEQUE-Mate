@@ -43,6 +43,8 @@ def comando_lances():
 def comando_desistir():
     """Desiste do jogo e declara um vencedor."""
     if jogo.game_running:
+        response = requests.post('http://localhost:5003/jogoFinalizado')
+        print(response.json())
         jogo.desistir()
     else:
         print("O jogo não está em andamento.")
