@@ -10,4 +10,4 @@ Peão: https://www.tinkercad.com/things/cHs5GHyaMU0-peao-crianca-chorando?sharec
 
 Cavalo: https://www.tinkercad.com/things/eQC0L94Cnr3-cavalo-chupa-cabra?sharecode=BNH86YgLZ8odMILuOMFg4EJMlfi-trfv-jBqgl2CEks
 
-Rainha (2): https://www.tinkercad.com/things/8XfgrhZWIbA/edit?returnTo=%2Fdashboard%2Fdesigns%2F3d
+Rainha (2): https://www.tinkercad.com/things/8XfgrhZWIbA-rainha-galega-de-santo-amaro-7cm?sharecode=mNsMO8JyRGBkMEkXwBy2bI24bBDQvXgJ6BE0tP6FepY
