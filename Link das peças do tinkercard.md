@@ -9,3 +9,5 @@ Bispo: https://www.tinkercad.com/things/lBweekLHsys-bispo-padre-sem-cabeca?share
 Peão: https://www.tinkercad.com/things/cHs5GHyaMU0-peao-crianca-chorando?sharecode=9vBw5wm0I9uo2_i8UjZXhRodGjq6bU8XXKiXgPV2yh0
 
 Cavalo: https://www.tinkercad.com/things/eQC0L94Cnr3-cavalo-chupa-cabra?sharecode=BNH86YgLZ8odMILuOMFg4EJMlfi-trfv-jBqgl2CEks
+
+Rainha (2): https://www.tinkercad.com/things/8XfgrhZWIbA/edit?returnTo=%2Fdashboard%2Fdesigns%2F3d
