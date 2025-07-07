@@ -75,7 +75,8 @@ void setup() {
 
     // Cria a nova tarefa para monitorar a fila
     xTaskCreate(printQueueTask, "Queue Monitor Task", 2048, NULL, 1, NULL);
-    //ledControl.sendMessage("Iniciar teste de LEDs");
+    ledControl.sendMessage("Iniciar teste de LEDs");
+    ledControl.startTask();
     //rfidControl.sendMessageToRFIDQueue("Iniciar leitura RFID");
     //rfidControl.setReadMode(CONTINUOUS_READ);  // Alterna para leitura contínua
     //rfidControl.setReadInterval(3000);         // Define o intervalo de leitura contínua para 3 segundos

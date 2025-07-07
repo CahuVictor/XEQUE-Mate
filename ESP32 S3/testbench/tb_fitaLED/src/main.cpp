@@ -6,7 +6,7 @@
 
 // https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
 
-#define NUM_LEDS 576      // Número total de LEDs
+#define NUM_LEDS 696      // Número total de LEDs
 #define DATA_PIN 5        // Pino de dados conectado ao DI dos LEDs
 #define BRIGHTNESS  64    // Brilho máximo (0-255)
 
@@ -66,6 +66,17 @@ void setPositionColor(const char* pos, CRGB color) {
   for (int i = 0; i < 9; i++) {
     leds[ledIndices[i]] = color;
     Serial.print(String(ledIndices[i]) + String(", "));
+  }
+  Serial.println("");
+  FastLED.show();
+}
+
+// Função para definir a cor de uma posição
+void test_PositionColor(CRGB color) {
+  Serial.print("Indices LEDs: ");
+  for (int i = 0; i < NUM_LEDS ; i++) {
+    leds[i] = color;
+    Serial.print(String(i) + String(", "));
   }
   Serial.println("");
   FastLED.show();
@@ -155,10 +166,15 @@ void loop() {
   setPositionColor("H8", CRGB::Green);
   delay(1000);
 
+  test_PositionColor(CRGB::Red);
+
+  delay(5000);
+
   // Apagar todas as posições
   FastLED.clear();
   FastLED.show();
   delay(1000);
+
 }
 
 // Função para animação arco-íris
